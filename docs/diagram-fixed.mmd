@@ -1,0 +1,113 @@
+erDiagram
+  USERS {
+    INT id PK
+    VARCHAR name
+    VARCHAR email
+    VARCHAR password_hash
+    VARCHAR avatar_url
+    VARCHAR phone
+    BOOLEAN verified
+    BOOLEAN premium
+    DECIMAL rating
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  CATEGORIES {
+    INT id PK
+    VARCHAR name
+    VARCHAR icon
+    VARCHAR color
+    TIMESTAMP created_at
+  }
+  ITEMS {
+    INT id PK
+    INT user_id FK
+    INT category_id FK
+    VARCHAR title
+    TEXT description
+    DECIMAL price
+    ENUM period
+    ENUM status
+    BOOLEAN featured
+    DECIMAL location_lat
+    DECIMAL location_lng
+    VARCHAR address
+    VARCHAR city
+    VARCHAR state
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  ITEM_SPECIFICATIONS {
+    INT id PK
+    INT item_id FK
+    VARCHAR label
+    VARCHAR value
+  }
+  ITEM_IMAGES {
+    INT id PK
+    INT item_id FK
+    VARCHAR url
+    BOOLEAN is_primary
+    TIMESTAMP created_at
+  }
+  LOANS {
+    INT id PK
+    INT item_id FK
+    INT borrower_id FK
+    INT lender_id FK
+    DATETIME start_date
+    DATETIME end_date
+    ENUM status
+    DECIMAL total_price
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  REVIEWS {
+    INT id PK
+    INT loan_id FK
+    INT reviewer_id FK
+    INT reviewed_id FK
+    INT rating
+    TEXT comment
+    TIMESTAMP created_at
+  }
+  CHATS {
+    INT id PK
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  CHAT_PARTICIPANTS {
+    INT chat_id FK
+    INT user_id FK
+  }
+  CHAT_MESSAGES {
+    INT id PK
+    INT chat_id FK
+    INT sender_id FK
+    TEXT content
+    TIMESTAMP created_at
+    TIMESTAMP read_at
+  }
+  NOTIFICATIONS {
+    INT id PK
+    INT user_id FK
+    ENUM type
+    VARCHAR title
+    TEXT message
+    BOOLEAN read
+    TIMESTAMP created_at
+  }
+
+  USERS ||--o{ ITEMS : "possui"
+  USERS ||--o{ LOANS : "empresta/pega"
+  USERS ||--o{ REVIEWS : "avalia/é avaliado"
+  USERS ||--o{ CHAT_PARTICIPANTS : "participa"
+  USERS ||--o{ CHAT_MESSAGES : "envia"
+  USERS ||--o{ NOTIFICATIONS : "recebe"
+  CATEGORIES ||--o{ ITEMS : "classifica"
+  ITEMS ||--o{ ITEM_SPECIFICATIONS : "tem"
+  ITEMS ||--o{ ITEM_IMAGES : "tem"
+  ITEMS ||--o{ LOANS : "é emprestado"
+  LOANS ||--o{ REVIEWS : "gera"
+  CHATS ||--o{ CHAT_PARTICIPANTS : "tem"
+  CHATS ||--o{ CHAT_MESSAGES : "tem"
