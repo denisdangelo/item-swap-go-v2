@@ -96,7 +96,32 @@ export interface ItemSearchResult {
   };
 }
 
+export interface GetItemsResult {
+  items: ItemWithDetails[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 export class ItemsApiService {
+  // Back-compat wrapper used by the app store
+  async getItems(filters: ItemSearchFilters & { page?: number; limit?: number } = {}): Promise<GetItemsResult> {
+    console.debug('[ItemsApiService] getItems() -> filters', filters);
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 20;
+    const result = await this.searchItems({ ...filters, page, limit });
+    const total = result.pagination.total ?? result.data.length;
+    const totalPages = result.pagination.totalPages ?? Math.ceil(total / limit);
+    return {
+      items: result.data,
+      total,
+      page,
+      limit,
+      hasMore: page < totalPages,
+    };
+  }
+
   // Get all items with search and filters
   async searchItems(filters: ItemSearchFilters = {}): Promise<ItemSearchResult> {
     const params = new URLSearchParams();
@@ -113,8 +138,8 @@ export class ItemsApiService {
       return {
         data: response.data,
         pagination: response.pagination || {
-          page: 1,
-          limit: 20,
+          page: Number(params.get('page')) || 1,
+          limit: Number(params.get('limit')) || 20,
           total: response.data.length,
           totalPages: 1,
         },

@@ -28,6 +28,7 @@ import { LoanConfirmationPage } from '@/pages/LoanConfirmationPage';
 import { LoanRequestPage } from '@/pages/LoanRequestPage';
 import SettingsPage from '@/pages/SettingsPage';
 import { UserProfilePage } from '@/pages/UserProfilePage';
+import { itemsApiService } from '@/services/api';
 import { itemsService } from '@/services/items';
 import { logEnvironmentStatus } from '@/utils/env-checker';
 
@@ -44,7 +45,7 @@ import ContatoPage from '@/pages/ContatoPage';
 import MessagesPage from '@/pages/MessagesPage';
 import PoliticaPrivacidade from '@/pages/PoliticaPrivacidade';
 import TermosUsoPage from '@/pages/TermosUsoPage';
-import type { AddItemData, Item, User } from '@/types';
+import type { AddItemData, Item } from '@/types';
 
 const queryClient = new QueryClient();
 
@@ -58,8 +59,8 @@ const ChatScreenWrapper = () => {
     const fetchItem = async () => {
       if (!itemId) return;
       try {
-        const fetchedItem = await itemsService.getItem(itemId);
-        setItem(fetchedItem);
+        const fetchedItem = await itemsApiService.getItemById(itemId);
+        setItem(fetchedItem as any);
       } catch (error) {
         console.error('Error fetching item:', error);
         navigate('/');
@@ -98,23 +99,13 @@ function AppRoutes() {
     }
   }, [user, isAuthRoute, navigate]);
 
-  const handleLogin = (userData: User) => {
-    // User is now managed by useAuth hook
-    navigate('/', { replace: true });
-  };
+  // login navega automaticamente via store/useAuth
 
   // If no user, only show auth route
   if (!user) {
     return (
       <Routes>
-        <Route
-          element={
-            <PageWrapper>
-              <AuthPage onLogin={handleLogin} />
-            </PageWrapper>
-          }
-          path="/auth"
-        />
+          <Route element={<PageWrapper><AuthPage /></PageWrapper>} path="/auth" />
         <Route element={<Navigate replace to="/auth" />} path="*" />
       </Routes>
     );
@@ -129,9 +120,9 @@ function AppRoutes() {
           user
             ? {
                 id: 'temp-id',
-                name: user.name,
-                email: user.email,
-                avatar: user.avatar,
+                name: `${(user as any).first_name || ''} ${(user as any).last_name || ''}`.trim(),
+                email: (user as any).email,
+                avatar: (user as any).avatar_url,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               }

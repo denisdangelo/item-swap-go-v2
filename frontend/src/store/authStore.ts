@@ -1,5 +1,6 @@
 import {
   authApiService,
+  usersApiService,
   type ChangePasswordData,
   type LoginData,
   type RegisterData,
@@ -24,6 +25,7 @@ export interface AuthState {
   updateProfile: (data: any) => Promise<void>;
   updateLocation: (location: { lat: number; lng: number; address?: string }) => Promise<void>;
   uploadAvatar: (file: File) => Promise<void>;
+  checkEmailAvailability: (email: string) => Promise<{ success: boolean; available?: boolean }>;
 
   // Utility actions
   setLoading: (loading: boolean) => void;
@@ -49,7 +51,9 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
+          console.debug('[authStore] login() -> calling API with', { email: data.email });
           const result = await authApiService.login(data);
+          console.debug('[authStore] login() -> success, received user id', (result as any)?.user?.id);
           set({
             user: (result as any).user as UserProfile,
             isAuthenticated: true,
@@ -58,6 +62,7 @@ export const useAuthStore = create<AuthState>()(
           return { success: true };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Login failed';
+          console.error('[authStore] login() -> error', errorMessage);
           set({
             error: errorMessage,
             isLoading: false,
@@ -73,7 +78,9 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
+          console.debug('[authStore] register() -> calling API with', { email: data.email });
           const result = await authApiService.register(data);
+          console.debug('[authStore] register() -> success, received user id', (result as any)?.user?.id);
           set({
             user: (result as any).user as UserProfile,
             isAuthenticated: true,
@@ -82,6 +89,7 @@ export const useAuthStore = create<AuthState>()(
           return { success: true };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+          console.error('[authStore] register() -> error', errorMessage);
           set({
             error: errorMessage,
             isLoading: false,
@@ -97,10 +105,12 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
 
         try {
+          console.debug('[authStore] logout() -> calling API');
           await authApiService.logout();
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
+          console.debug('[authStore] logout() -> clearing state');
           set({
             user: null,
             isAuthenticated: false,
@@ -117,8 +127,9 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          // Mock refresh - in real implementation would call API
-          set({ isLoading: false });
+          console.debug('[authStore] refreshUser() -> calling /auth/me');
+          const profile = await authApiService.getCurrentUser();
+          set({ user: profile as any, isLoading: false });
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : 'Failed to refresh user data';
@@ -150,9 +161,9 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          // Mock update - in real implementation would call API
-          const updatedUser = get().user;
-          set({ user: updatedUser, isLoading: false });
+          console.debug('[authStore] updateProfile() -> calling API');
+          const updatedUser = await usersApiService.updateProfile(data);
+          set({ user: updatedUser as any, isLoading: false });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
           set({ error: errorMessage, isLoading: false });
@@ -165,9 +176,13 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          // This would call the users API service
-          // For now, we'll just refresh the user data
-          await get().refreshUser();
+          console.debug('[authStore] updateLocation() -> calling API');
+          const updated = await usersApiService.updateLocation({
+            lat: _location.lat,
+            lng: _location.lng,
+            address: _location.address,
+          });
+          set({ user: updated as any, isLoading: false });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to update location';
           set({ error: errorMessage, isLoading: false });
@@ -180,13 +195,26 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          // This would call the users API service
-          // For now, we'll just refresh the user data
-          await get().refreshUser();
+          console.debug('[authStore] uploadAvatar() -> calling API');
+          const profile = await usersApiService.uploadAvatar(_file);
+          set({ user: profile as any, isLoading: false });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to upload avatar';
           set({ error: errorMessage, isLoading: false });
           throw error;
+        }
+      },
+
+      // Check email availability
+      checkEmailAvailability: async (email: string) => {
+        try {
+          console.debug('[authStore] checkEmailAvailability() ->', email);
+          const available = await authApiService.checkEmailAvailability(email);
+          return { success: true, available };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to check email';
+          console.warn('[authStore] checkEmailAvailability() -> error', errorMessage);
+          return { success: false };
         }
       },
 
@@ -207,11 +235,24 @@ export const useAuthStore = create<AuthState>()(
 
       // Initialize from stored data
       initialize: () => {
-        // Mock initialization - in real implementation would check stored tokens
-        set({
-          user: null,
-          isAuthenticated: false,
-        });
+        try {
+          const accessToken = localStorage.getItem('accessToken');
+          const storedUser = localStorage.getItem('user');
+          if (accessToken && storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            console.debug('[authStore] initialize() -> found stored user', parsedUser?.id);
+            set({ user: parsedUser as any, isAuthenticated: true });
+            // Fire and forget refresh
+            get().refreshUser().catch((err) =>
+              console.warn('[authStore] initialize() -> refreshUser failed', err)
+            );
+          } else {
+            set({ user: null, isAuthenticated: false });
+          }
+        } catch (e) {
+          console.warn('[authStore] initialize() -> failed to parse stored user');
+          set({ user: null, isAuthenticated: false });
+        }
       },
     }),
     {
