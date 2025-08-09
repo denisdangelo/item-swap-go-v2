@@ -1,26 +1,24 @@
 export interface User {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   phone?: string;
-  avatarUrl?: string;
+  avatar_url?: string;
   location?: {
     latitude: number;
     longitude: number;
     address: string;
   };
-  emailVerified: boolean;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  is_verified: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AuthResponse {
   user: User;
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
+  sessionToken: string;
 }
 
 export interface LoginData {
@@ -31,7 +29,7 @@ export interface LoginData {
 export interface RegisterData {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   phone?: string;
 }
