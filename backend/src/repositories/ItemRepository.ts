@@ -107,28 +107,31 @@ export class ItemRepository extends BaseRepository<Item, CreateItemData, UpdateI
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
-    // Build WHERE conditions
+    // Build WHERE conditions and parameter buckets
     const conditions: string[] = ['i.is_active = true', 'i.is_available = true'];
-    const params: any[] = [];
+    const whereParams: any[] = [];
+    const distanceParams: any[] = [];
+    const searchSelectParams: any[] = [];
+    const searchWhereParams: any[] = [];
 
     if (filters.category_id) {
       conditions.push('i.category_id = ?');
-      params.push(filters.category_id);
+      whereParams.push(filters.category_id);
     }
 
     if (filters.min_price !== undefined) {
       conditions.push('i.daily_rate >= ?');
-      params.push(filters.min_price);
+      whereParams.push(filters.min_price);
     }
 
     if (filters.max_price !== undefined) {
       conditions.push('i.daily_rate <= ?');
-      params.push(filters.max_price);
+      whereParams.push(filters.max_price);
     }
 
     if (filters.condition_rating) {
       conditions.push('i.condition_rating >= ?');
-      params.push(filters.condition_rating);
+      whereParams.push(filters.condition_rating);
     }
 
     // Location-based search
@@ -138,13 +141,13 @@ export class ItemRepository extends BaseRepository<Item, CreateItemData, UpdateI
       distanceSelect = `, (6371 * acos(cos(radians(?)) * cos(radians(i.location_lat)) * 
                          cos(radians(i.location_lng) - radians(?)) + 
                          sin(radians(?)) * sin(radians(i.location_lat)))) AS distance`;
-      params.unshift(filters.location_lat, filters.location_lng, filters.location_lat);
+      distanceParams.push(filters.location_lat, filters.location_lng, filters.location_lat);
       havingClause = `HAVING distance <= ${filters.radius}`;
     } else if (userLat && userLng) {
       distanceSelect = `, (6371 * acos(cos(radians(?)) * cos(radians(i.location_lat)) * 
                          cos(radians(i.location_lng) - radians(?)) + 
                          sin(radians(?)) * sin(radians(i.location_lat)))) AS distance`;
-      params.unshift(userLat, userLng, userLat);
+      distanceParams.push(userLat, userLng, userLat);
     }
 
     // Text search
@@ -157,14 +160,17 @@ export class ItemRepository extends BaseRepository<Item, CreateItemData, UpdateI
       );
       const searchTerm = filters.search;
       const searchPattern = `%${searchTerm}%`;
-      params.push(searchTerm, searchTerm, searchPattern, searchPattern);
+      // 1 param for SELECT-level MATCH, and 3 for WHERE (AGAINST + 2x LIKE)
+      searchSelectParams.push(searchTerm);
+      searchWhereParams.push(searchTerm, searchPattern, searchPattern);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    // Count query (use subselect when filtering by distance to support HAVING)
+    // Count query (use subselect whenever distance is computed to keep params in sync)
     let countQuery: string;
-    if (havingClause) {
+    let countParams: any[] = [];
+    if (distanceSelect) {
       countQuery = `
         SELECT COUNT(*) as total FROM (
           SELECT i.id
@@ -176,15 +182,17 @@ export class ItemRepository extends BaseRepository<Item, CreateItemData, UpdateI
           ${havingClause}
         ) as sub
       `;
+      countParams = [...distanceParams, ...whereParams, ...searchWhereParams];
     } else {
       countQuery = `
         SELECT COUNT(*) as total
         FROM items i
         ${whereClause}
       `;
+      countParams = [...whereParams, ...searchWhereParams];
     }
 
-    const countResult = await executeQuery<Array<{ total: number }>>(countQuery, params);
+    const countResult = await executeQuery<Array<{ total: number }>>(countQuery, countParams);
     const total = countResult[0].total;
 
     // Data query (avoid ONLY_FULL_GROUP_BY issues by using subqueries for aggregates)
@@ -211,8 +219,14 @@ export class ItemRepository extends BaseRepository<Item, CreateItemData, UpdateI
       ORDER BY ${filters.search ? 'relevance_score DESC,' : ''} ${distanceSelect ? 'distance ASC,' : ''} i.created_at DESC
       LIMIT ? OFFSET ?
     `;
-
-    const dataParams = [...params, limit, offset];
+    const dataParams = [
+      ...distanceParams,
+      ...searchSelectParams,
+      ...whereParams,
+      ...searchWhereParams,
+      limit,
+      offset,
+    ];
     const rows = await executeQuery<any[]>(dataQuery, dataParams);
 
     // Get images for each item
