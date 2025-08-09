@@ -29,8 +29,6 @@ import { LoanRequestPage } from '@/pages/LoanRequestPage';
 import SettingsPage from '@/pages/SettingsPage';
 import { UserProfilePage } from '@/pages/UserProfilePage';
 import { itemsApiService } from '@/services/api/index';
-// TODO: remove legacy itemsService usage entirely after migrating pages
-import { itemsService } from '@/services/items';
 import { logEnvironmentStatus } from '@/utils/env-checker';
 
 import { SearchFiltersProvider } from '@/contexts/SearchFiltersContext';
@@ -220,39 +218,33 @@ function AppRoutes() {
           />
           <Route
             element={
-              <ProtectedRoute>
-                <PageWrapper>
-                  <AddItemScreen
-                    onBack={() => navigate(-1)}
-                    onSave={async (data: AddItemData) => {
-                      try {
+              <PageWrapper>
+                <AddItemScreen
+                  onBack={() => navigate(-1)}
+                  onSave={async (data: AddItemData) => {
+                    try {
                         // Preparar dados para o serviço
-                        const itemData = {
-                          title: data.title,
-                          description: data.description,
-                          price: parseFloat(data.price),
-                          period: data.period,
-                          images: data.images,
-                          categoryId: data.categoryId,
-                          ownerId: 'temp-id', // Mock user ID
-                          location: {
-                            latitude: data.latitude || 0,
-                            longitude: data.longitude || 0,
-                            address: data.address,
-                          },
-                          status: 'available' as const,
-                        };
+                          const createData = {
+                            category_id: data.categoryId,
+                            title: data.title,
+                            description: data.description,
+                            condition_rating: 5,
+                            estimated_value: parseFloat(data.price),
+                            daily_rate: parseFloat(data.price),
+                            location_lat: data.latitude ?? 0,
+                            location_lng: data.longitude ?? 0,
+                            location_address: data.address,
+                          } as const;
 
-                        await itemsService.createItem(itemData);
+                        await itemsApiService.createItem(createData as any);
                         navigate('/');
                       } catch (error) {
                         console.error('Error creating item:', error);
                         throw error;
                       }
                     }}
-                  />
-                </PageWrapper>
-              </ProtectedRoute>
+                />
+              </PageWrapper>
             }
             path="/add-item"
           />

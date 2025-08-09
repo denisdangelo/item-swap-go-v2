@@ -54,33 +54,15 @@ export class ApiService {
       }
     );
 
-    // Response interceptor - Handle errors and token refresh
+    // Response interceptor - Handle errors (no token refresh in simplified flow)
     this.api.interceptors.response.use(
       (response: AxiosResponse) => {
         return response;
       },
       async (error) => {
-        const originalRequest = error.config;
-
-        // Handle 401 errors (token expired)
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          try {
-            const refreshToken = this.getRefreshToken();
-            if (refreshToken) {
-              const newTokens = await this.refreshAccessToken(refreshToken);
-              this.setAuthTokens(newTokens.accessToken, newTokens.refreshToken);
-
-              // Retry original request with new token
-              originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
-              return this.api(originalRequest);
-            }
-          } catch (refreshError) {
-            // Refresh failed, redirect to login
-            this.handleAuthFailure();
-            return Promise.reject(refreshError);
-          }
+        // On 401, clear auth and redirect to login
+        if (error.response?.status === 401) {
+          this.handleAuthFailure();
         }
 
         return Promise.reject(this.handleApiError(error));
@@ -152,27 +134,20 @@ export class ApiService {
   }
 
   private getRefreshToken(): string | null {
-    return localStorage.getItem('refreshToken');
+    return null;
   }
 
-  private setAuthTokens(accessToken: string, refreshToken: string): void {
+  private setAuthTokens(accessToken: string): void {
     localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
   }
 
   private clearAuthTokens(): void {
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
   }
 
   // Refresh access token
-  private async refreshAccessToken(
-    refreshToken: string
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    const response = await axios.post(`${this.baseURL}/auth/refresh`, {
-      refresh_token: refreshToken,
-    });
-    return response.data.data;
+  private async refreshAccessToken(): Promise<never> {
+    throw new Error('Not supported');
   }
 
   // Handle authentication failure

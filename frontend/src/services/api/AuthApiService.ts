@@ -24,9 +24,8 @@ export interface UserProfile extends User {
   average_rating: number;
 }
 
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
+export interface SimpleAuthResponse {
+  sessionToken: string;
   user: User;
 }
 
@@ -54,13 +53,12 @@ export interface ChangePasswordData {
 
 export class AuthApiService {
   // Register new user
-  async register(data: RegisterData): Promise<AuthTokens> {
-    const response = await apiService.post<AuthTokens>('/auth/register', data);
+  async register(data: RegisterData): Promise<SimpleAuthResponse> {
+    const response = await apiService.post<SimpleAuthResponse>('/auth/register', data);
 
     if (response.success && response.data) {
-      // Store tokens
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      // Store simple session token (userId)
+      localStorage.setItem('accessToken', response.data.sessionToken);
       localStorage.setItem('user', JSON.stringify(response.data.user));
 
       return response.data;
@@ -70,13 +68,12 @@ export class AuthApiService {
   }
 
   // Login user
-  async login(data: LoginData): Promise<AuthTokens> {
-    const response = await apiService.post<AuthTokens>('/auth/login', data);
+  async login(data: LoginData): Promise<SimpleAuthResponse> {
+    const response = await apiService.post<SimpleAuthResponse>('/auth/login', data);
 
     if (response.success && response.data) {
-      // Store tokens
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      // Store simple session token (userId)
+      localStorage.setItem('accessToken', response.data.sessionToken);
       localStorage.setItem('user', JSON.stringify(response.data.user));
 
       return response.data;
@@ -87,20 +84,14 @@ export class AuthApiService {
 
   // Logout user
   async logout(): Promise<void> {
-    const refreshToken = localStorage.getItem('refreshToken');
-
-    if (refreshToken) {
-      try {
-        await apiService.post('/auth/logout', { refresh_token: refreshToken });
-      } catch (error) {
-        // Continue with logout even if API call fails
-        console.error('Logout API call failed:', error);
-      }
+    try {
+      await apiService.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout API call failed:', error);
     }
 
     // Clear local storage
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   }
 
@@ -114,7 +105,6 @@ export class AuthApiService {
 
     // Clear local storage
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   }
 
@@ -154,27 +144,8 @@ export class AuthApiService {
   }
 
   // Refresh access token
-  async refreshToken(): Promise<AuthTokens> {
-    const refreshToken = localStorage.getItem('refreshToken');
-
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await apiService.post<AuthTokens>('/auth/refresh', {
-      refresh_token: refreshToken,
-    });
-
-    if (response.success && response.data) {
-      // Update stored tokens
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-
-      return response.data;
-    }
-
-    throw new Error('Token refresh failed');
+  async refreshToken(): Promise<never> {
+    throw new Error('Token refresh not supported');
   }
 
   // Get stored user data
@@ -204,13 +175,12 @@ export class AuthApiService {
 
   // Get stored refresh token
   getRefreshToken(): string | null {
-    return localStorage.getItem('refreshToken');
+    return null;
   }
 
   // Clear authentication data
   clearAuth(): void {
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   }
 }

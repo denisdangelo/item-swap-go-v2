@@ -59,20 +59,16 @@ export class AuthMiddleware {
     }
   };
 
-  // Extract token from request
+  // Extract token from request (now expects sessionToken = userId)
   private extractToken(req: Request): string | null {
     const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-      return null;
-    }
-
+    if (!authHeader) return null;
+    // Accept either "Bearer <userId>" or raw token (userId)
     const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      return null;
+    if (parts.length === 2 && parts[0] === 'Bearer') {
+      return parts[1];
     }
-
-    return parts[1];
+    return authHeader;
   }
 }
 

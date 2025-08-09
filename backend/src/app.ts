@@ -22,24 +22,7 @@ class App {
   }
 
   private initializeMiddlewares(): void {
-    // Security middleware
-    this.app.use(
-      helmet({
-        contentSecurityPolicy: {
-          directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
-            imgSrc: ["'self'", 'data:', 'https:'],
-          },
-        },
-        hsts: {
-          maxAge: 31536000,
-          includeSubDomains: true,
-          preload: true,
-        },
-      })
-    );
+    // Security middleware removed for simplified demo
 
     // CORS configuration
     this.app.use(
@@ -54,24 +37,7 @@ class App {
     // Compression middleware
     this.app.use(compression());
 
-    // Rate limiting
-    if (isProduction) {
-      const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100, // limit each IP to 100 requests per windowMs
-        message: {
-          success: false,
-          error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many requests from this IP, please try again later.',
-          },
-        },
-        standardHeaders: true,
-        legacyHeaders: false,
-      });
-
-      this.app.use(limiter);
-    }
+    // Rate limiting removed for simplified demo
 
     // Body parsing middleware
     this.app.use(express.json({ limit: '10mb' }));

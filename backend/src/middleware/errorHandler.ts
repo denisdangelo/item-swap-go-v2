@@ -85,22 +85,6 @@ export const errorHandler = (
     errorCode = error.constructor.name;
     message = error.message;
     details = error.context;
-  } else if (error instanceof ZodError) {
-    statusCode = 400;
-    errorCode = 'VALIDATION_ERROR';
-    message = 'Validation failed';
-    details = error.errors.map((err) => ({
-      field: err.path.join('.'),
-      message: err.message,
-    }));
-  } else if (error.name === 'JsonWebTokenError') {
-    statusCode = 401;
-    errorCode = 'INVALID_TOKEN';
-    message = 'Invalid token';
-  } else if (error.name === 'TokenExpiredError') {
-    statusCode = 401;
-    errorCode = 'TOKEN_EXPIRED';
-    message = 'Token expired';
   } else if (error.name === 'MulterError') {
     statusCode = 400;
     errorCode = 'FILE_UPLOAD_ERROR';

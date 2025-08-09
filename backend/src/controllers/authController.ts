@@ -3,34 +3,8 @@ import { AuthService } from '@/services/AuthService';
 import { UserService } from '@/services/UserService';
 import { sendCreated, sendSuccess } from '@/utils/response';
 import { Request, Response } from 'express';
-import { z } from 'zod';
 
-// Validation schemas
-const registerSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  first_name: z.string().min(1, 'First name is required').max(100, 'First name too long'),
-  last_name: z.string().min(1, 'Last name is required').max(100, 'Last name too long'),
-  phone: z.string().optional(),
-  bio: z.string().max(500, 'Bio too long').optional(),
-  location_lat: z.number().min(-90).max(90).optional(),
-  location_lng: z.number().min(-180).max(180).optional(),
-  location_address: z.string().max(500, 'Address too long').optional(),
-});
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-const refreshTokenSchema = z.object({
-  refresh_token: z.string().min(1, 'Refresh token is required'),
-});
-
-const changePasswordSchema = z.object({
-  current_password: z.string().min(1, 'Current password is required'),
-  new_password: z.string().min(8, 'New password must be at least 8 characters'),
-});
+// Simplified: no Zod. We'll accept body as-is for demo purposes.
 
 export class AuthController {
   private authService: AuthService;
@@ -43,59 +17,33 @@ export class AuthController {
 
   // Register new user
   register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const validatedData = registerSchema.parse(req.body);
-
-    const result = await this.authService.register(validatedData);
+    const result = await this.authService.register(req.body);
 
     sendCreated(res, result, 'User registered successfully');
   });
 
   // Login user
   login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const validatedData = loginSchema.parse(req.body);
-
-    const result = await this.authService.login(validatedData);
+    const result = await this.authService.login(req.body);
 
     sendSuccess(res, result, 'Login successful');
   });
 
   // Refresh access token
   refreshToken = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { refresh_token } = refreshTokenSchema.parse(req.body);
-    const userId = req.user?.userId;
-
-    if (!userId) {
-      throw new Error('User ID not found in request');
-    }
-
-    const result = await this.authService.refreshToken(refresh_token, userId);
-
-    sendSuccess(res, result, 'Token refreshed successfully');
+    throw new Error('Refresh token not supported in simplified auth');
   });
 
   // Logout user
   logout = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { refresh_token } = refreshTokenSchema.parse(req.body);
-    const userId = req.user?.userId;
-
-    if (!userId) {
-      throw new Error('User ID not found in request');
-    }
-
-    await this.authService.logout(refresh_token, userId);
+    await this.authService.logout();
 
     sendSuccess(res, null, 'Logout successful');
   });
 
   // Logout from all devices
   logoutAll = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user?.userId;
-
-    if (!userId) {
-      throw new Error('User ID not found in request');
-    }
-
-    await this.authService.logoutAll(userId);
+    await this.authService.logoutAll();
 
     sendSuccess(res, null, 'Logged out from all devices');
   });
@@ -115,7 +63,7 @@ export class AuthController {
 
   // Change password
   changePassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { current_password, new_password } = changePasswordSchema.parse(req.body);
+    const { current_password, new_password } = req.body;
     const userId = req.user?.userId;
 
     if (!userId) {
@@ -134,9 +82,6 @@ export class AuthController {
     if (!email) {
       throw new Error('Email parameter is required');
     }
-
-    // Validate email format
-    z.string().email().parse(email);
 
     const isAvailable = await this.userService.isEmailAvailable(email);
 

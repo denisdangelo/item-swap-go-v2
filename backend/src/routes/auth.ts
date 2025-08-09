@@ -1,13 +1,4 @@
-import {
-  changePassword,
-  checkEmail,
-  login,
-  logout,
-  logoutAll,
-  me,
-  refreshToken,
-  register,
-} from '@/controllers/authController';
+import { changePassword, checkEmail, login, logout, logoutAll, me, register } from '@/controllers/authController';
 import { authenticate } from '@/middleware/auth';
 import { Router } from 'express';
 
@@ -18,8 +9,7 @@ router.post('/register', register);
 router.post('/login', login);
 router.get('/check-email', checkEmail);
 
-// Protected routes
-router.post('/refresh', authenticate, refreshToken);
+// Simplified protected routes (no refresh endpoint)
 router.post('/logout', authenticate, logout);
 router.post('/logout-all', authenticate, logoutAll);
 router.get('/me', authenticate, me);

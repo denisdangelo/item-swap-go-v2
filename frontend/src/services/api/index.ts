@@ -8,7 +8,7 @@ export { UsersApiService, usersApiService } from './UsersApiService';
 // Export types
 export type { ApiError, ApiResponse } from './ApiService';
 export type {
-  AuthTokens,
+  SimpleAuthResponse,
   ChangePasswordData,
   LoginData,
   RegisterData,

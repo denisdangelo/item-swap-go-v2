@@ -1,6 +1,5 @@
 import { executeQuery } from '@/config/database';
 import { CreateUserData, UpdateUserData, User, UserProfile } from '@/models/User';
-import bcrypt from 'bcryptjs';
 import { BaseRepository } from './BaseRepository';
 
 export class UserRepository extends BaseRepository<User, CreateUserData, UpdateUserData> {
@@ -11,14 +10,12 @@ export class UserRepository extends BaseRepository<User, CreateUserData, UpdateU
     created_at, updated_at
   `;
 
-  // Create user with hashed password
+  // Create user storing password as plain text (simplified for demo)
   async create(data: CreateUserData): Promise<User> {
-    const hashedPassword = await bcrypt.hash(data.password, 12);
-
     const userData = {
       ...data,
-      password_hash: hashedPassword,
-    };
+      password_hash: data.password,
+    } as any;
 
     // Remove password from data before calling parent create
     const { password, ...createData } = userData;
@@ -33,16 +30,15 @@ export class UserRepository extends BaseRepository<User, CreateUserData, UpdateU
     return rows.length > 0 ? rows[0] : null;
   }
 
-  // Verify password
+  // Verify password (plain text comparison)
   async verifyPassword(user: User, password: string): Promise<boolean> {
-    return bcrypt.compare(password, user.password_hash);
+    return user.password_hash === password;
   }
 
-  // Update password
+  // Update password (store plain text)
   async updatePassword(id: string, newPassword: string): Promise<boolean> {
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
     const query = 'UPDATE users SET password_hash = ? WHERE id = ?';
-    const result = await executeQuery<any>(query, [hashedPassword, id]);
+    const result = await executeQuery<any>(query, [newPassword, id]);
     return result.affectedRows > 0;
   }
 

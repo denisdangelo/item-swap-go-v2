@@ -2,64 +2,8 @@ import { asyncHandler } from '@/middleware/errorHandler';
 import { ItemService } from '@/services/ItemService';
 import { sendCreated, sendPaginatedSuccess, sendSuccess } from '@/utils/response';
 import { Request, Response } from 'express';
-import { z } from 'zod';
 
-// Validation schemas
-const createItemSchema = z.object({
-  category_id: z.string().min(1, 'Category ID is required'),
-  title: z.string().min(3, 'Title must be at least 3 characters').max(200, 'Title too long'),
-  description: z
-    .string()
-    .min(10, 'Description must be at least 10 characters')
-    .max(2000, 'Description too long'),
-  condition_rating: z.number().int().min(1).max(5),
-  estimated_value: z.number().min(0).optional(),
-  daily_rate: z.number().min(0).optional(),
-  location_lat: z.number().min(-90).max(90).optional(),
-  location_lng: z.number().min(-180).max(180).optional(),
-  location_address: z.string().max(500, 'Address too long').optional(),
-});
-
-const updateItemSchema = z.object({
-  category_id: z.string().min(1, 'Category ID is required').optional(),
-  title: z
-    .string()
-    .min(3, 'Title must be at least 3 characters')
-    .max(200, 'Title too long')
-    .optional(),
-  description: z
-    .string()
-    .min(10, 'Description must be at least 10 characters')
-    .max(2000, 'Description too long')
-    .optional(),
-  condition_rating: z.number().int().min(1).max(5).optional(),
-  estimated_value: z.number().min(0).optional(),
-  daily_rate: z.number().min(0).optional(),
-  location_lat: z.number().min(-90).max(90).optional(),
-  location_lng: z.number().min(-180).max(180).optional(),
-  location_address: z.string().max(500, 'Address too long').optional(),
-  is_available: z.boolean().optional(),
-});
-
-const searchItemsSchema = z.object({
-  category_id: z.string().optional(),
-  min_price: z.number().min(0).optional(),
-  max_price: z.number().min(0).optional(),
-  condition_rating: z.number().int().min(1).max(5).optional(),
-  location_lat: z.number().min(-90).max(90).optional(),
-  location_lng: z.number().min(-180).max(180).optional(),
-  radius: z.number().min(1).max(100).optional(),
-  search: z.string().optional(),
-  is_available: z.boolean().optional(),
-  page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(1).max(100).default(20),
-});
-
-const addImageSchema = z.object({
-  url: z.string().url('Invalid URL format'),
-  alt_text: z.string().max(200, 'Alt text too long').optional(),
-  is_primary: z.boolean().default(false),
-});
+// Simplified: no Zod. Accept raw bodies and queries.
 
 export class ItemController {
   private itemService: ItemService;
@@ -70,15 +14,13 @@ export class ItemController {
 
   // Create new item
   createItem = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user?.userId;
+    const userId = req.user?.userId || (req.body && (req.body.owner_id || req.body.ownerId));
 
     if (!userId) {
-      throw new Error('User ID not found in request');
+      throw new Error('User ID is required (provide via Authorization header or owner_id in body)');
     }
 
-    const validatedData = createItemSchema.parse(req.body);
-
-    const item = await this.itemService.createItem(validatedData, userId);
+    const item = await this.itemService.createItem(req.body as any, userId);
 
     sendCreated(res, item, 'Item created successfully');
   });
@@ -101,9 +43,7 @@ export class ItemController {
       throw new Error('User ID not found in request');
     }
 
-    const validatedData = updateItemSchema.parse(req.body);
-
-    const item = await this.itemService.updateItem(id, validatedData, userId);
+    const item = await this.itemService.updateItem(id, req.body as any, userId);
 
     sendSuccess(res, item, 'Item updated successfully');
   });
@@ -124,10 +64,12 @@ export class ItemController {
 
   // Search items
   searchItems = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const validatedQuery = searchItemsSchema.parse({
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const filters: any = {
       ...req.query,
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      page,
+      limit,
       min_price: req.query.min_price ? parseFloat(req.query.min_price as string) : undefined,
       max_price: req.query.max_price ? parseFloat(req.query.max_price as string) : undefined,
       condition_rating: req.query.condition_rating
@@ -141,9 +83,7 @@ export class ItemController {
         : undefined,
       radius: req.query.radius ? parseFloat(req.query.radius as string) : undefined,
       is_available: req.query.is_available ? req.query.is_available === 'true' : undefined,
-    });
-
-    const { page, limit, ...filters } = validatedQuery;
+    };
 
     // Get user location for distance calculation if available
     const userLat = req.user ? undefined : undefined; // Could be extracted from user profile
@@ -220,13 +160,11 @@ export class ItemController {
       throw new Error('User ID not found in request');
     }
 
-    const validatedData = addImageSchema.parse(req.body);
-
     const image = await this.itemService.addItemImage(
       id,
-      validatedData.url,
-      validatedData.alt_text,
-      validatedData.is_primary,
+      req.body.url,
+      req.body.alt_text,
+      req.body.is_primary,
       userId
     );
 

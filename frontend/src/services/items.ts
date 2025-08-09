@@ -4,7 +4,7 @@ import { MOCK_CATEGORIES, MOCK_ITEMS, MOCK_USERS, mockDelay } from './mockData';
 import type { Item, ItemWithDetails, PaginatedResponse, Location } from '@/types';
 
 // const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 interface GetItemsParams {
   page: number;
