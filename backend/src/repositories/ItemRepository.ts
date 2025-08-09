@@ -162,18 +162,32 @@ export class ItemRepository extends BaseRepository<Item, CreateItemData, UpdateI
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    // Count query
-    const countQuery = `
-      SELECT COUNT(*) as total
-      FROM items i
-      ${whereClause}
-      ${havingClause}
-    `;
+    // Count query (use subselect when filtering by distance to support HAVING)
+    let countQuery: string;
+    if (havingClause) {
+      countQuery = `
+        SELECT COUNT(*) as total FROM (
+          SELECT i.id
+          ${distanceSelect}
+          FROM items i
+          JOIN users u ON i.owner_id = u.id
+          JOIN categories c ON i.category_id = c.id
+          ${whereClause}
+          ${havingClause}
+        ) as sub
+      `;
+    } else {
+      countQuery = `
+        SELECT COUNT(*) as total
+        FROM items i
+        ${whereClause}
+      `;
+    }
 
     const countResult = await executeQuery<Array<{ total: number }>>(countQuery, params);
     const total = countResult[0].total;
 
-    // Data query
+    // Data query (avoid ONLY_FULL_GROUP_BY issues by using subqueries for aggregates)
     const dataQuery = `
       SELECT 
         i.id, i.owner_id, i.category_id, i.title, i.description, i.condition_rating,
@@ -185,16 +199,14 @@ export class ItemRepository extends BaseRepository<Item, CreateItemData, UpdateI
         
         c.name as category_name, c.icon as category_icon, c.color as category_color,
         
-        COALESCE(AVG(r.rating), 0) as owner_average_rating,
-        COUNT(DISTINCT r.id) as owner_reviews_count
+        (SELECT COALESCE(AVG(r.rating), 0) FROM reviews r WHERE r.reviewed_id = u.id) as owner_average_rating,
+        (SELECT COUNT(DISTINCT r2.id) FROM reviews r2 WHERE r2.reviewed_id = u.id) as owner_reviews_count
         ${distanceSelect}
         ${matchClause}
       FROM items i
       JOIN users u ON i.owner_id = u.id
       JOIN categories c ON i.category_id = c.id
-      LEFT JOIN reviews r ON u.id = r.reviewed_id
       ${whereClause}
-      GROUP BY i.id
       ${havingClause}
       ORDER BY ${filters.search ? 'relevance_score DESC,' : ''} ${distanceSelect ? 'distance ASC,' : ''} i.created_at DESC
       LIMIT ? OFFSET ?
