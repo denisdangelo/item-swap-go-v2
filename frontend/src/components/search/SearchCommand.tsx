@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { itemsService } from '@/services/items';
+import { itemsApiService } from '@/services/api/index';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 import type { Item } from '@/types';
@@ -54,12 +54,12 @@ export function SearchCommand({
 
       setIsLoading(true);
       try {
-        const response = await itemsService.getItems({
+        const response = await itemsApiService.getItems({
           search: query,
           limit: isMobile ? 3 : 5, // Menos resultados no mobile
           page: 1,
         });
-        setSuggestions(response.items);
+        setSuggestions((response as any).items ?? (response as any).data ?? []);
       } catch (error) {
         console.error('Error searching items:', error);
         setSuggestions([]);

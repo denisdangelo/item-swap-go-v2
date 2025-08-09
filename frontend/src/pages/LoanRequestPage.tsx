@@ -9,7 +9,7 @@ import { AppHeader } from '@/components/ui/app-header';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
-import { itemsService } from '@/services/items';
+import { itemsApiService } from '@/services/api/index';
 
 import type { ItemWithDetails } from '@/types';
 
@@ -30,7 +30,7 @@ export function LoanRequestPage() {
       }
 
       try {
-        const data = await itemsService.getItem(itemId);
+        const data = await itemsApiService.getItemById(itemId);
         setItem(data);
       } catch (err) {
         setError('Não foi possível carregar os detalhes do item');

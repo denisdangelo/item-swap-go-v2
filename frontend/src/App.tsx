@@ -29,6 +29,7 @@ import { LoanRequestPage } from '@/pages/LoanRequestPage';
 import SettingsPage from '@/pages/SettingsPage';
 import { UserProfilePage } from '@/pages/UserProfilePage';
 import { itemsApiService } from '@/services/api/index';
+// TODO: remove legacy itemsService usage entirely after migrating pages
 import { itemsService } from '@/services/items';
 import { logEnvironmentStatus } from '@/utils/env-checker';
 

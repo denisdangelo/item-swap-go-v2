@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
-import { itemsService } from '@/services/items';
+import { itemsApiService } from '@/services/api/index';
 
 import type { ItemWithDetails } from '@/types';
 
@@ -31,7 +31,7 @@ function ItemDetailsPage() {
         }
         setLoading(true);
         setError(null);
-        const data = await itemsService.getItem(itemId);
+        const data = await itemsApiService.getItemById(itemId);
         if (!data.owner || !data.category) {
           throw new Error('Dados do item incompletos');
         }

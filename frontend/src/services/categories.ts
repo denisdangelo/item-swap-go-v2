@@ -1,4 +1,4 @@
-import { apiService } from './api';
+import { apiService } from './api/ApiService';
 import { MOCK_CATEGORIES, mockDelay } from './mockData';
 
 import type { Category, PaginatedResponse } from '@/types';

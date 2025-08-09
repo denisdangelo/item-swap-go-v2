@@ -1,4 +1,4 @@
-import { apiService } from './api';
+import { apiService } from './api/ApiService';
 import type { Chat, ChatMessage, PaginatedResponse } from '@/types';
 
 export const chatService = {

@@ -1,4 +1,4 @@
-import { apiService } from './api';
+import { apiService } from './api/ApiService';
 import type { User, LoginCredentials, RegisterData } from '@/types';
 
 // Mock data para demonstração
