@@ -27,34 +27,7 @@ services:
         reservations:
           memory: 512M
 
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: empresta-ae-redis-prod
-    restart: always
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-    volumes:
-      - redis_data:/data
-    networks:
-      - empresta-ae-network
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "redis-cli",
-          "--no-auth-warning",
-          "-a",
-          "${REDIS_PASSWORD}",
-          "ping",
-        ]
-      timeout: 20s
-      retries: 10
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-        reservations:
-          memory: 128M
+  # Redis removed in simplified app
 
   # Backend API
   backend:
@@ -71,9 +44,7 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      JWT_SECRET: ${JWT_SECRET}
-      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      # REDIS_URL removed
       CORS_ORIGIN: ${CORS_ORIGIN}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
@@ -87,8 +58,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+      # redis removed
     healthcheck:
       test: ["CMD", "node", "dist/scripts/healthcheck.js"]
       timeout: 20s
@@ -164,7 +134,7 @@ services:
 
 volumes:
   mysql_data:
-  redis_data:
+  # redis_data removed
   backend_uploads:
   backend_logs:
   nginx_logs:

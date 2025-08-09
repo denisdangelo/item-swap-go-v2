@@ -1,5 +1,4 @@
 import logger from '@/config/logger';
-import { cacheService } from '@/config/redis';
 import { NextFunction, Request, Response } from 'express';
 
 // Cache middleware options
@@ -42,32 +41,7 @@ export const cache = (options: CacheOptions = {}) => {
     try {
       const cacheKey = keyGenerator(req);
 
-      // Try to get from cache
-      const cachedData = await cacheService.get(cacheKey);
-
-      if (cachedData) {
-        logger.debug(`Cache hit for key: ${cacheKey}`);
-        return res.json(cachedData);
-      }
-
-      logger.debug(`Cache miss for key: ${cacheKey}`);
-
-      // Store original json method
-      const originalJson = res.json;
-
-      // Override json method to cache response
-      res.json = function (data: any) {
-        // Cache successful responses only
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          cacheService.set(cacheKey, data, ttl).catch((error) => {
-            logger.error('Failed to cache response:', error);
-          });
-        }
-
-        // Call original json method
-        return originalJson.call(this, data);
-      };
-
+      // Redis cache disabled in simplified app; passthrough
       next();
     } catch (error) {
       logger.error('Cache middleware error:', error);
@@ -78,27 +52,8 @@ export const cache = (options: CacheOptions = {}) => {
 
 // Cache invalidation middleware
 export const invalidateCache = (patterns: string[] | ((req: Request) => string[])) => {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // Store original json method
-    const originalJson = res.json;
-
-    // Override json method to invalidate cache after successful response
-    res.json = function (data: any) {
-      // Invalidate cache for successful responses
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        const patternsToInvalidate = typeof patterns === 'function' ? patterns(req) : patterns;
-
-        Promise.all(patternsToInvalidate.map((pattern) => cacheService.delPattern(pattern))).catch(
-          (error) => {
-            logger.error('Failed to invalidate cache:', error);
-          }
-        );
-      }
-
-      // Call original json method
-      return originalJson.call(this, data);
-    };
-
+  return async (_req: Request, _res: Response, next: NextFunction): Promise<void> => {
+    // Cache invalidation is disabled
     next();
   };
 };
@@ -134,76 +89,18 @@ export const invalidateUserCache = (userId?: string) =>
   invalidateCache([userId ? `user:profile:${userId}` : 'user:profile:*']);
 
 // Rate limiting with Redis
-export const rateLimit = (options: {
-  windowMs: number;
-  max: number;
-  keyGenerator?: (req: Request) => string;
-}) => {
-  const { windowMs, max, keyGenerator = (req) => `rate_limit:${req.ip}` } = options;
-
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const key = keyGenerator(req);
-      const current = await cacheService.incr(key);
-
-      if (current === 1) {
-        await cacheService.expire(key, Math.ceil(windowMs / 1000));
-      }
-
-      if (current > max) {
-        return res.status(429).json({
-          success: false,
-          error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many requests, please try again later.',
-          },
-        });
-      }
-
-      // Add rate limit headers
-      res.set({
-        'X-RateLimit-Limit': max.toString(),
-        'X-RateLimit-Remaining': Math.max(0, max - current).toString(),
-        'X-RateLimit-Reset': new Date(Date.now() + windowMs).toISOString(),
-      });
-
-      next();
-    } catch (error) {
-      logger.error('Rate limit middleware error:', error);
-      next();
-    }
-  };
+export const rateLimit = (_options: { windowMs: number; max: number; keyGenerator?: (req: Request) => string }) => {
+  // Rate limiting disabled in simplified app
+  return async (_req: Request, _res: Response, next: NextFunction): Promise<void> => next();
 };
 
 // Session cache
 export const sessionCache = {
-  // Store user session data
-  setUserSession: async (userId: string, sessionData: any, ttl: number = 3600): Promise<void> => {
-    await cacheService.set(`session:${userId}`, sessionData, ttl);
-  },
-
-  // Get user session data
-  getUserSession: async <T = any>(userId: string): Promise<T | null> => {
-    return cacheService.get<T>(`session:${userId}`);
-  },
-
-  // Delete user session
-  deleteUserSession: async (userId: string): Promise<void> => {
-    await cacheService.del(`session:${userId}`);
-  },
-
-  // Store temporary data (like email verification codes)
-  setTempData: async (key: string, data: any, ttl: number = 600): Promise<void> => {
-    await cacheService.set(`temp:${key}`, data, ttl);
-  },
-
-  // Get temporary data
-  getTempData: async <T = any>(key: string): Promise<T | null> => {
-    return cacheService.get<T>(`temp:${key}`);
-  },
-
-  // Delete temporary data
-  deleteTempData: async (key: string): Promise<void> => {
-    await cacheService.del(`temp:${key}`);
-  },
+  // No-op session cache in simplified app
+  setUserSession: async (_userId: string, _sessionData: any, _ttl: number = 3600): Promise<void> => {},
+  getUserSession: async <T = any>(_userId: string): Promise<T | null> => null,
+  deleteUserSession: async (_userId: string): Promise<void> => {},
+  setTempData: async (_key: string, _data: any, _ttl: number = 600): Promise<void> => {},
+  getTempData: async <T = any>(_key: string): Promise<T | null> => null,
+  deleteTempData: async (_key: string): Promise<void> => {},
 };

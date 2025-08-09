@@ -4,7 +4,7 @@ import { z } from 'zod';
 // Load environment variables
 dotenv.config();
 
-// Environment validation schema
+// Environment validation schema (simplified)
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.string().transform(Number).default('3001'),
@@ -17,16 +17,16 @@ const envSchema = z.object({
   DB_PASSWORD: z.string().min(1, 'DB_PASSWORD is required'),
   DB_NAME: z.string().min(1, 'DB_NAME is required'),
 
-  // JWT
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  JWT_EXPIRES_IN: z.string().default('15m'),
-  REFRESH_TOKEN_SECRET: z.string().min(32, 'REFRESH_TOKEN_SECRET must be at least 32 characters'),
-  REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
+  // Auth (no JWT/refresh required in simplified app)
+  JWT_SECRET: z.string().optional(),
+  JWT_EXPIRES_IN: z.string().optional(),
+  REFRESH_TOKEN_SECRET: z.string().optional(),
+  REFRESH_TOKEN_EXPIRES_IN: z.string().optional(),
 
   // CORS
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
-  // Redis (optional)
+  // Redis removed in simplified app
   REDIS_URL: z.string().optional(),
 
   // File Upload

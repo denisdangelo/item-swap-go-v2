@@ -13,7 +13,6 @@ interface HealthCheckData {
   version: string;
   services: {
     database: 'connected' | 'disconnected' | 'unknown';
-    redis: 'connected' | 'disconnected' | 'unknown';
   };
 }
 
@@ -22,10 +21,7 @@ export const healthCheck = asyncHandler(async (req: Request, res: Response): Pro
   // Test database connection
   const isDatabaseConnected = await testConnection();
 
-  // Test Redis connection
-  const isRedisConnected = await testRedisConnection();
-
-  const isHealthy = isDatabaseConnected && isRedisConnected;
+  const isHealthy = isDatabaseConnected;
 
   const data: HealthCheckData = {
     status: isHealthy ? 'healthy' : 'unhealthy',
@@ -35,7 +31,6 @@ export const healthCheck = asyncHandler(async (req: Request, res: Response): Pro
     version: process.env.npm_package_version || '1.0.0',
     services: {
       database: isDatabaseConnected ? 'connected' : 'disconnected',
-      redis: isRedisConnected ? 'connected' : 'disconnected',
     },
   };
 
@@ -51,10 +46,7 @@ export const detailedHealthCheck = asyncHandler(
     // Test database connection
     const isDatabaseConnected = await testConnection();
 
-    // Test Redis connection
-    const isRedisConnected = await testRedisConnection();
-
-    const isHealthy = isDatabaseConnected && isRedisConnected;
+    const isHealthy = isDatabaseConnected;
 
     const data = {
       status: isHealthy ? ('healthy' as const) : ('unhealthy' as const),
@@ -75,7 +67,6 @@ export const detailedHealthCheck = asyncHandler(
       },
       services: {
         database: isDatabaseConnected ? ('connected' as const) : ('disconnected' as const),
-        redis: isRedisConnected ? ('connected' as const) : ('disconnected' as const),
       },
     };
 
