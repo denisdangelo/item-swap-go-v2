@@ -3,7 +3,7 @@ import {
   type CreateItemData,
   type ItemSearchFilters,
   type UpdateItemData,
-} from '@/services/api';
+} from '@/services/api/index';
 import { useStore } from '@/store';
 import { useCallback } from 'react';
 

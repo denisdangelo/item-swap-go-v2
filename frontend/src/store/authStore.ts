@@ -5,7 +5,7 @@ import {
   type LoginData,
   type RegisterData,
   type UserProfile,
-} from '@/services/api';
+} from '@/services/api/index';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 

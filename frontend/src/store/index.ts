@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import { type Category, categoriesApiService, itemsApiService } from '@/services/api';
+import { type Category, categoriesApiService, itemsApiService } from '@/services/api/index';
 import { geolocationService } from '@/services/geolocation';
 
 import type { ItemWithDetails, Location, Screen } from '@/types';

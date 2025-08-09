@@ -1,4 +1,4 @@
-import { type Category } from '@/services/api';
+import { type Category } from '@/services/api/index';
 import { useStore } from '@/store';
 import { useCallback, useEffect } from 'react';
 
