@@ -3,10 +3,9 @@ import { Icons } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth'; // Certifique-se que o caminho está correto
 import { cn } from '@/lib/utils';
 import { typography } from '@/styles/design-system';
-import type { User } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import React, { useState } from 'react';
