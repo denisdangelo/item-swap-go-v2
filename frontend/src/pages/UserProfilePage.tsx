@@ -37,7 +37,7 @@ export function UserProfilePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isDarkMode, toggleDarkMode } = useStore();
-  const { updateProfile, changePassword, logout } = useAuth();
+  const { updateProfile, changePassword, logout, uploadAvatar } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -92,15 +92,28 @@ export function UserProfilePage() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        // In a real app, you would upload the file to a server
-        // For now, we'll just show a toast
-        toast({
-          title: 'Upload de avatar',
-          description: 'Funcionalidade em desenvolvimento. Em breve você poderá alterar sua foto.',
-        });
+        try {
+          setIsLoading(true);
+          
+          // Upload do avatar usando o serviço
+          await uploadAvatar(file);
+          
+          toast({
+            title: 'Avatar atualizado!',
+            description: 'Sua foto de perfil foi atualizada com sucesso.',
+          });
+        } catch (error) {
+          toast({
+            title: 'Erro ao fazer upload',
+            description: error instanceof Error ? error.message : 'Não foi possível atualizar sua foto.',
+            variant: 'destructive',
+          });
+        } finally {
+          setIsLoading(false);
+        }
       }
     };
     input.click();
@@ -298,8 +311,13 @@ export function UserProfilePage() {
               variant="secondary"
               className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-md"
               onClick={handleAvatarUpload}
+              disabled={isLoading}
             >
-              <Camera className="h-4 w-4" />
+              {isLoading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <Camera className="h-4 w-4" />
+              )}
             </Button>
           </div>
 

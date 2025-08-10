@@ -54,8 +54,10 @@ export class ImageService {
     const outputPath = path.join(this.uploadDir, filename);
 
     try {
-      // Process image with Sharp
-      const processedBuffer = await sharp(file.buffer)
+      console.log('Processing image:', file.path, 'Size:', file.size, 'Mimetype:', file.mimetype);
+      
+      // Process image with Sharp - read from file path since Multer saves to disk
+      const processedBuffer = await sharp(file.path)
         .resize(width, height, {
           fit: 'inside',
           withoutEnlargement: true,
