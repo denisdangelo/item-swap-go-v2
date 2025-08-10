@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/store/authStore';
+import { useMemo } from 'react';
 import type { User } from '@/types';
 
 // Função para adaptar UserProfile do backend para User do frontend
@@ -43,8 +44,8 @@ export const useAuth = () => {
     reset,
   } = useAuthStore();
 
-  // Adaptar o userProfile para o formato esperado pelo frontend
-  const user = adaptUserProfile(userProfile);
+  // Adaptar o userProfile para o formato esperado pelo frontend - memoizado
+  const user = useMemo(() => adaptUserProfile(userProfile), [userProfile]);
   const isVerified = userProfile ? userProfile.is_verified : false;
 
   return {

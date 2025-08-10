@@ -42,8 +42,6 @@ export function UserProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-
-
   // Form states
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
@@ -443,6 +441,7 @@ export function UserProfilePage() {
                       <Edit3 className="mr-2 h-4 w-4" />
                       Editar Perfil
                     </Button>
+                    
                   </div>
                 )}
               </CardContent>
