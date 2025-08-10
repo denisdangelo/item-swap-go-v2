@@ -1,0 +1,113 @@
+version: "3.8"
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: empresta-ae-db-dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: empresta_ae
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - empresta-ae-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis removed in simplified app
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    container_name: empresta-ae-backend-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: empresta_ae
+      # REDIS_URL removed
+      # No JWT/refresh required in simplified app
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - backend_uploads:/app/uploads
+    networks:
+      - empresta-ae-network
+    depends_on:
+      db:
+        condition: service_healthy
+      # redis removed
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      timeout: 20s
+      retries: 10
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    container_name: empresta-ae-frontend-dev
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - empresta-ae-network
+    depends_on:
+      - backend
+
+  # Test Database (for running tests)
+  db_test:
+    image: mysql:8.0
+    container_name: empresta-ae-db-test
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: empresta_ae_test
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_test_data:/var/lib/mysql
+    networks:
+      - empresta-ae-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis test removed
+
+volumes:
+  mysql_data:
+  mysql_test_data:
+  # redis volumes removed
+  backend_uploads:
+
+networks:
+  empresta-ae-network:
+    driver: bridge
