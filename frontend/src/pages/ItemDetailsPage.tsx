@@ -13,6 +13,17 @@ import { itemsApiService } from '@/services/api/index';
 
 import type { ItemWithDetails } from '@/types';
 
+// Função para construir URL completa de imagem
+const buildImageUrl = (imageUrl: string) => {
+  if (imageUrl.startsWith('http')) {
+    return imageUrl; // URL completa já
+  }
+  if (imageUrl.startsWith('/')) {
+    return `http://localhost:3001${imageUrl}`; // URL relativa -> completa
+  }
+  return `http://localhost:3001/uploads/${imageUrl}`; // Apenas filename
+};
+
 function ItemDetailsPage() {
   const navigate = useNavigate();
   const { itemId } = useParams();
@@ -193,7 +204,7 @@ function ItemDetailsPage() {
         {/* Carrossel de Imagens */}
         <div className="mb-6">
           <ImageCarousel
-            images={item.images}
+            images={item.images.map(img => buildImageUrl(img.url))}
             title={item.title}
             currentIndex={currentImageIndex}
             setCurrentIndex={setCurrentImageIndex}

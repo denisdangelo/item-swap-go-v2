@@ -209,7 +209,6 @@ function AppRoutes() {
             element={
               <PageWrapper>
                 <AddItemScreen
-                  onBack={() => navigate(-1)}
                   onSave={async (data: AddItemData) => {
                     try {
                         // Preparar dados para o serviço
@@ -225,7 +224,30 @@ function AppRoutes() {
                             location_address: data.address,
                           } as const;
 
-                        await itemsApiService.createItem(createData as any);
+                        // Criar o item
+                        const createdItem = await itemsApiService.createItem(createData as any);
+                        
+                        // Upload das imagens se houver
+                        if (data.images && data.images.length > 0) {
+                          try {
+                            // Converter base64 para File objects
+                            const imageFiles: File[] = [];
+                            for (let i = 0; i < data.images.length; i++) {
+                              const base64Data = data.images[i];
+                              const response = await fetch(base64Data);
+                              const blob = await response.blob();
+                              const file = new File([blob], `image-${i}.jpg`, { type: 'image/jpeg' });
+                              imageFiles.push(file);
+                            }
+                            
+                            // Upload das imagens
+                            await itemsApiService.uploadItemImages(createdItem.id, imageFiles);
+                          } catch (imageError) {
+                            console.error('Error uploading images:', imageError);
+                            // Não falhar se o upload de imagens falhar
+                          }
+                        }
+                        
                         navigate('/');
                       } catch (error) {
                         console.error('Error creating item:', error);

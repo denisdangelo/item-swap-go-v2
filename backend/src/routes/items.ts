@@ -24,8 +24,8 @@ router.get('/category/:categoryId', getItemsByCategory);
 router.get('/:id', optionalAuthenticate, getItemById);
 router.get('/:id/images', getItemImages);
 
-// Simplify: allow creating without auth for demo
-router.post('/', createItem);
+// Protected routes - require authentication
+router.post('/', authenticate, createItem);
 router.put('/:id', authenticate, updateItem);
 router.delete('/:id', authenticate, deleteItem);
 router.patch('/:id/availability', authenticate, setItemAvailability);

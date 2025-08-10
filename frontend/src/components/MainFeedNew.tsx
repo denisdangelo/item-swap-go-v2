@@ -4,20 +4,31 @@ import { useNavigate } from 'react-router-dom';
 import { useCategories } from '@/hooks/useCategories';
 import { useItems } from '@/hooks/useItems';
 
+// Função para construir URL completa de imagem
+const buildImageUrl = (imageUrl: string) => {
+  if (imageUrl.startsWith('http')) {
+    return imageUrl; // URL completa já
+  }
+  if (imageUrl.startsWith('/')) {
+    return `http://localhost:3001${imageUrl}`; // URL relativa -> completa
+  }
+  return `http://localhost:3001/uploads/${imageUrl}`; // Apenas filename
+};
+
 // Função para gerar imagem baseada na categoria
-const getCategoryImage = (categoryId: string) => {
+const getCategoryImage = (categoryName: string) => {
   const categoryImages: { [key: string]: string } = {
-    '1': 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=800&h=600&fit=crop&q=80', // Ferramentas
-    '2': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&h=600&fit=crop&q=80', // Eletrônicos
-    '3': 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=800&h=600&fit=crop&q=80', // Esportes
-    '4': 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800&h=600&fit=crop&q=80', // Livros
-    '5': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&h=600&fit=crop&q=80', // Móveis
-    '6': 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=800&h=600&fit=crop&q=80', // Casa e Jardim
-    '7': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&h=600&fit=crop&q=80', // Veículos
-    '8': 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=800&h=600&fit=crop&q=80', // Música
+    'Ferramentas': 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=800&h=600&fit=crop&q=80',
+    'Eletrônicos': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&h=600&fit=crop&q=80',
+    'Esportes': 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=800&h=600&fit=crop&q=80',
+    'Livros e Mídia': 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800&h=600&fit=crop&q=80',
+    'Casa e Jardim': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&h=600&fit=crop&q=80',
+    'Música': 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=800&h=600&fit=crop&q=80',
+    'Roupas e Acessórios': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&h=600&fit=crop&q=80',
+    'Veículos': 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=800&h=600&fit=crop&q=80',
   };
   
-  return categoryImages[categoryId] || 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=800&h=600&fit=crop&q=80';
+  return categoryImages[categoryName] || 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=800&h=600&fit=crop&q=80';
 };
 
 export function MainFeedNew() {
@@ -113,20 +124,41 @@ export function MainFeedNew() {
           {items.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {items.map((item) => {
-                const categoryImage = getCategoryImage(item.categoryId || item.category?.id || '1');
+                // Usar imagem real do banco se disponível, senão usar imagem de categoria
+                const itemWithDetails = item as any; // Type assertion para acessar propriedades do backend
+                const hasRealImages = itemWithDetails.images && itemWithDetails.images.length > 0;
+                const imageUrl = hasRealImages 
+                  ? buildImageUrl(itemWithDetails.images[0].url)
+                  : getCategoryImage(itemWithDetails.category?.name || 'Ferramentas');
+                
                 return (
                   <div 
                     key={item.id}
                     className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden group hover:-translate-y-1"
                     onClick={() => navigate(`/items/${item.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        navigate(`/items/${item.id}`);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                   >
                     {/* Imagem do item */}
                     <div className="relative aspect-[4/3] overflow-hidden">
                       <img
-                        src={categoryImage}
                         alt={item.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
+                        onError={(e) => {
+                          // Fallback para imagem de categoria se a imagem real falhar
+                          const target = e.target as HTMLImageElement;
+                          const fallbackUrl = getCategoryImage(itemWithDetails.category?.name || 'Ferramentas');
+                          if (target.src !== fallbackUrl) {
+                            target.src = fallbackUrl;
+                          }
+                        }}
+                        src={imageUrl}
                       />
                       
                       {/* Overlay gradiente sutil */}
@@ -136,7 +168,7 @@ export function MainFeedNew() {
                       <div className="absolute bottom-3 left-3">
                         <div className="rounded-xl bg-white/95 px-3 py-2 shadow-lg backdrop-blur-sm">
                           <div className="text-lg font-bold text-gray-900">
-                            R$ {item.daily_rate || item.price || 'N/A'}
+                            R$ {itemWithDetails.daily_rate || itemWithDetails.estimated_value || 'N/A'}
                           </div>
                           <div className="-mt-1 text-xs text-gray-600">
                             por dia
@@ -159,9 +191,9 @@ export function MainFeedNew() {
                       
                       {/* Status de disponibilidade */}
                       <div className="flex items-center gap-1 text-sm">
-                        <div className={`w-2 h-2 rounded-full ${item.is_available || item.status === 'available' ? 'bg-green-500' : 'bg-red-500'}`} />
-                        <span className={`font-medium ${item.is_available || item.status === 'available' ? 'text-green-600' : 'text-red-600'}`}>
-                          {item.is_available || item.status === 'available' ? 'Disponível agora' : 'Indisponível'}
+                        <div className={`w-2 h-2 rounded-full ${itemWithDetails.is_available ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <span className={`font-medium ${itemWithDetails.is_available ? 'text-green-600' : 'text-red-600'}`}>
+                          {itemWithDetails.is_available ? 'Disponível agora' : 'Indisponível'}
                         </span>
                       </div>
                     </div>
