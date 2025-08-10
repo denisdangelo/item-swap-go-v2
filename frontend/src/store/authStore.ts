@@ -127,7 +127,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          console.debug('[authStore] refreshUser() -> calling /auth/me');
           const profile = await authApiService.getCurrentUser();
           set({ user: profile as any, isLoading: false });
         } catch (error) {
@@ -238,9 +237,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           const accessToken = localStorage.getItem('accessToken');
           const storedUser = localStorage.getItem('user');
+          
           if (accessToken && storedUser) {
             const parsedUser = JSON.parse(storedUser);
-            console.debug('[authStore] initialize() -> found stored user', parsedUser?.id);
             set({ user: parsedUser as any, isAuthenticated: true });
             // Fire and forget refresh
             get().refreshUser().catch((err) =>

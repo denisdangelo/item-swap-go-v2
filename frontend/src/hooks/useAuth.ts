@@ -1,8 +1,30 @@
 import { useAuthStore } from '@/store/authStore';
+import type { User } from '@/types';
+
+// Função para adaptar UserProfile do backend para User do frontend
+const adaptUserProfile = (userProfile: any): User | null => {
+  if (!userProfile) return null;
+  
+  return {
+    id: userProfile.id,
+    name: userProfile.full_name || `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || userProfile.email,
+    email: userProfile.email,
+    avatar: userProfile.avatar_url,
+    phone: userProfile.phone,
+    rating: userProfile.average_rating,
+    location: userProfile.location_lat && userProfile.location_lng ? {
+      latitude: userProfile.location_lat,
+      longitude: userProfile.location_lng,
+      address: userProfile.location_address || '',
+    } : undefined,
+    createdAt: userProfile.created_at,
+    updatedAt: userProfile.updated_at,
+  };
+};
 
 export const useAuth = () => {
   const {
-    user,
+    user: userProfile,
     isAuthenticated,
     isLoading,
     error,
@@ -21,8 +43,9 @@ export const useAuth = () => {
     reset,
   } = useAuthStore();
 
-  // Mock data for missing properties
-  const isVerified = user ? true : false;
+  // Adaptar o userProfile para o formato esperado pelo frontend
+  const user = adaptUserProfile(userProfile);
+  const isVerified = userProfile ? userProfile.is_verified : false;
 
   return {
     user,

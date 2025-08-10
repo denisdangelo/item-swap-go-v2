@@ -56,6 +56,8 @@ export function AppHeader({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
+
+
   // Usar estado centralizado de busca e filtros
   const {
     filters,

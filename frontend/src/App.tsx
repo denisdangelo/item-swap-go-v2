@@ -115,18 +115,7 @@ function AppRoutes() {
     <div className="flex min-h-screen flex-col">
       <OfflineBanner />
       <AppHeader
-        user={
-          user
-            ? {
-                id: 'temp-id',
-                name: `${(user as any).first_name || ''} ${(user as any).last_name || ''}`.trim(),
-                email: (user as any).email,
-                avatar: (user as any).avatar_url,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              }
-            : null
-        }
+        user={user}
         onProfileClick={() => navigate('/profile')}
         showSearchField={location.pathname === '/'}
         showBackButton={location.pathname === '/search'}

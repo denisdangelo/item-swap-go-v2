@@ -95,7 +95,7 @@ export function getSetupInstructions(): string[] {
     '8. Adicione: VITE_GOOGLE_MAPS_API_KEY=sua_chave_aqui',
     '',
     'Para configurar a API:',
-    '1. Adicione ao .env.local: VITE_API_URL=http://localhost:3000/api',
+    '1. Adicione ao .env.local: VITE_API_URL=http://localhost:3001/api',
     '',
     'Após configurar, reinicie o servidor de desenvolvimento.',
   ];

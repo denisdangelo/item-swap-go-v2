@@ -42,6 +42,8 @@ export function UserProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+
+
   // Form states
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
@@ -59,6 +61,16 @@ export function UserProfilePage() {
     pushNotifications: true,
     darkMode: isDarkMode,
   });
+
+  // Atualizar profileData quando o usuário mudar
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || '',
+        email: user.email || '',
+      });
+    }
+  }, [user]);
 
   // Sync dark mode with store and load notification settings
   useEffect(() => {
@@ -113,8 +125,14 @@ export function UserProfilePage() {
 
     setIsLoading(true);
     try {
+      // Separar nome completo em first_name e last_name
+      const nameParts = profileData.name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       await updateProfile({
-        name: profileData.name.trim(),
+        first_name: firstName,
+        last_name: lastName,
         email: profileData.email.trim(),
       });
 
@@ -167,9 +185,8 @@ export function UserProfilePage() {
     setIsLoading(true);
     try {
       await changePassword({
-        currentPassword: passwordData.current,
-        newPassword: passwordData.new,
-        confirmPassword: passwordData.new,
+        current_password: passwordData.current,
+        new_password: passwordData.new,
       });
 
       toast({
