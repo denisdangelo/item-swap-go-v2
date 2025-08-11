@@ -48,7 +48,7 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({ item, onBack, onChat }) => {
       <div className="container mx-auto px-4 py-6">
         <div className="space-y-4 p-3 sm:space-y-6 sm:p-4">
           <ImageCarousel
-            available={item.status === 'available'}
+            available={item.is_available}
             currentIndex={0}
             images={mockImages}
             setCurrentIndex={(index) => {}}
@@ -74,10 +74,10 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({ item, onBack, onChat }) => {
               <Button
                 aria-label="Solicitar empréstimo do item"
                 className="hover-lift w-full items-center justify-center gap-2 bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
-                disabled={item.status !== 'available'}
+                disabled={!item.is_available}
               >
                 <Calendar className="h-4 w-4" />
-                <span>{item.status === 'available' ? 'Solicitar Empréstimo' : 'Indisponível'}</span>
+                <span>{item.is_available ? 'Solicitar Empréstimo' : 'Indisponível'}</span>
               </Button>
             </div>
           </div>

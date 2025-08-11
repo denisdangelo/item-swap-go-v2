@@ -38,6 +38,7 @@ export function UserProfilePage() {
   const { user } = useAuth();
   const { isDarkMode, toggleDarkMode } = useStore();
   const { updateProfile, changePassword, logout, uploadAvatar } = useAuth();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -175,10 +176,10 @@ export function UserProfilePage() {
       return;
     }
 
-    if (passwordData.new.length < 6) {
+    if (!passwordData.new.trim()) {
       toast({
-        title: 'Senha muito curta',
-        description: 'A nova senha deve ter pelo menos 6 caracteres.',
+        title: 'Nova senha obrigatória',
+        description: 'Digite sua nova senha.',
         variant: 'destructive',
       });
       return;
@@ -195,11 +196,11 @@ export function UserProfilePage() {
 
     setIsLoading(true);
     try {
-      await changePassword({
+      const result = await changePassword({
         current_password: passwordData.current,
         new_password: passwordData.new,
       });
-
+      
       toast({
         title: 'Senha alterada!',
         description: 'Sua senha foi atualizada com sucesso.',
@@ -548,9 +549,9 @@ export function UserProfilePage() {
                       id="current-password"
                       type={showPassword ? 'text' : 'password'}
                       value={passwordData.current}
-                      onChange={(e) =>
-                        setPasswordData((prev) => ({ ...prev, current: e.target.value }))
-                      }
+                      onChange={(e) => {
+                        setPasswordData((prev) => ({ ...prev, current: e.target.value }));
+                      }}
                       className="h-12 pr-10"
                       placeholder="Digite sua senha atual"
                     />
@@ -572,21 +573,23 @@ export function UserProfilePage() {
                     id="new-password"
                     type="password"
                     value={passwordData.new}
-                    onChange={(e) => setPasswordData((prev) => ({ ...prev, new: e.target.value }))}
+                    onChange={(e) => {
+                      setPasswordData((prev) => ({ ...prev, new: e.target.value }));
+                    }}
                     className="h-12"
                     placeholder="Digite sua nova senha"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirmar Senha</Label>
+                  <Label htmlFor="confirm-password">Confirmar Senha</Label>image.png
                   <Input
                     id="confirm-password"
                     type="password"
                     value={passwordData.confirm}
-                    onChange={(e) =>
-                      setPasswordData((prev) => ({ ...prev, confirm: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      setPasswordData((prev) => ({ ...prev, confirm: e.target.value }));
+                    }}
                     className="h-12"
                     placeholder="Confirme sua nova senha"
                   />

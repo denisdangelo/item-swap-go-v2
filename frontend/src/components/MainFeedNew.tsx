@@ -6,13 +6,27 @@ import { useItems } from '@/hooks/useItems';
 
 // Função para construir URL completa de imagem
 const buildImageUrl = (imageUrl: string) => {
+  console.log('🔍 buildImageUrl chamada com:', imageUrl);
+  
+  if (!imageUrl) {
+    console.warn('⚠️ imageUrl está vazio ou undefined');
+    return null;
+  }
+  
   if (imageUrl.startsWith('http')) {
+    console.log('✅ URL completa já fornecida:', imageUrl);
     return imageUrl; // URL completa já
   }
+  
   if (imageUrl.startsWith('/')) {
-    return `http://localhost:3001${imageUrl}`; // URL relativa -> completa
+    const fullUrl = `http://localhost:3001${imageUrl}`;
+    console.log('🔗 URL relativa convertida para:', fullUrl);
+    return fullUrl; // URL relativa -> completa
   }
-  return `http://localhost:3001/uploads/${imageUrl}`; // Apenas filename
+  
+  const fullUrl = `http://localhost:3001/uploads/${imageUrl}`;
+  console.log('📁 Filename convertido para:', fullUrl);
+  return fullUrl; // Apenas filename
 };
 
 // Função para gerar imagem baseada na categoria
@@ -67,8 +81,19 @@ export function MainFeedNew() {
   // Debug: log items data
   useEffect(() => {
     if (items.length > 0) {
-      console.log('Items loaded:', items);
-      console.log('First item structure:', items[0]);
+      console.log('📦 Items loaded:', items);
+      console.log('🔍 First item structure:', items[0]);
+      
+      // Teste específico para imagens
+      items.forEach((item, index) => {
+        const itemWithDetails = item as any;
+        console.log(`🖼️ Item ${index + 1} (${item.title}):`, {
+          hasImages: !!itemWithDetails.images,
+          imagesCount: itemWithDetails.images?.length || 0,
+          firstImage: itemWithDetails.images?.[0],
+          category: itemWithDetails.category?.name
+        });
+      });
     }
   }, [items]);
 
@@ -126,10 +151,74 @@ export function MainFeedNew() {
               {items.map((item) => {
                 // Usar imagem real do banco se disponível, senão usar imagem de categoria
                 const itemWithDetails = item as any; // Type assertion para acessar propriedades do backend
-                const hasRealImages = itemWithDetails.images && itemWithDetails.images.length > 0;
-                const imageUrl = hasRealImages 
-                  ? buildImageUrl(itemWithDetails.images[0].url)
-                  : getCategoryImage(itemWithDetails.category?.name || 'Ferramentas');
+                
+                console.log('📦 Processando item:', item.title);
+                console.log('🖼️ Estrutura do item:', itemWithDetails);
+                console.log('🖼️ Imagens do item:', itemWithDetails.images);
+                
+                const hasRealImages = itemWithDetails.images && 
+                                    Array.isArray(itemWithDetails.images) && 
+                                    itemWithDetails.images.length > 0;
+                
+                console.log('✅ Tem imagens reais?', hasRealImages);
+                
+                let imageUrl: string;
+                if (hasRealImages) {
+                  const firstImage = itemWithDetails.images[0];
+                  console.log('🖼️ Primeira imagem:', firstImage);
+                  const builtUrl = buildImageUrl(firstImage.url);
+                  
+                  // Verificar se a URL construída é válida antes de usar
+                  if (builtUrl && builtUrl.startsWith('http')) {
+                    // Testar se a imagem existe antes de usar
+                    const testImage = new Image();
+                    testImage.onload = () => {
+                      console.log('✅ Imagem real carregou com sucesso:', builtUrl);
+                    };
+                    testImage.onerror = () => {
+                      console.log('❌ Imagem real falhou, usando fallback:', builtUrl);
+                      // A imagem falhou, vamos usar fallback
+                      const fallbackUrl = getCategoryImage(itemWithDetails.category?.name || 'Ferramentas');
+                      console.log('🔄 Usando fallback da categoria:', fallbackUrl);
+                      
+                      // Encontrar o elemento de imagem e atualizar
+                      const imgElement = document.querySelector(`[data-item-id="${item.id}"] img`);
+                      if (imgElement) {
+                        (imgElement as HTMLImageElement).src = fallbackUrl;
+                      }
+                    };
+                    testImage.src = builtUrl;
+                    
+                    // Usar a URL construída inicialmente
+                    imageUrl = builtUrl;
+                  } else {
+                    // URL inválida, usar fallback imediatamente
+                    const categoryName = itemWithDetails.category?.name || 'Ferramentas';
+                    console.log('⚠️ URL inválida, usando imagem de categoria:', categoryName);
+                    imageUrl = getCategoryImage(categoryName);
+                  }
+                  
+                  // Debug específico para Harry Potter
+                  if (item.title.toLowerCase().includes('harry potter')) {
+                    console.log('🧙‍♂️ DEBUG HARRY POTTER:', {
+                      originalUrl: firstImage.url,
+                      builtUrl: builtUrl,
+                      finalUrl: imageUrl,
+                      itemTitle: item.title,
+                      itemId: item.id
+                    });
+                  }
+                } else {
+                  const categoryName = itemWithDetails.category?.name || 'Ferramentas';
+                  console.log('🏷️ Usando imagem de categoria:', categoryName);
+                  imageUrl = getCategoryImage(categoryName);
+                  console.log('🖼️ Imagem de categoria:', imageUrl);
+                }
+                
+                // Garantir que imageUrl seja sempre uma string válida
+                if (!imageUrl) {
+                  imageUrl = getCategoryImage('Ferramentas'); // Fallback padrão
+                }
                 
                 return (
                   <div 
@@ -143,6 +232,7 @@ export function MainFeedNew() {
                     }}
                     role="button"
                     tabIndex={0}
+                    data-item-id={item.id}
                   >
                     {/* Imagem do item */}
                     <div className="relative aspect-[4/3] overflow-hidden">
@@ -151,12 +241,17 @@ export function MainFeedNew() {
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
                         onError={(e) => {
+                          console.log('❌ Erro ao carregar imagem:', imageUrl);
                           // Fallback para imagem de categoria se a imagem real falhar
                           const target = e.target as HTMLImageElement;
                           const fallbackUrl = getCategoryImage(itemWithDetails.category?.name || 'Ferramentas');
+                          console.log('🔄 Usando fallback:', fallbackUrl);
                           if (target.src !== fallbackUrl) {
                             target.src = fallbackUrl;
                           }
+                        }}
+                        onLoad={() => {
+                          console.log('✅ Imagem carregada com sucesso:', imageUrl);
                         }}
                         src={imageUrl}
                       />

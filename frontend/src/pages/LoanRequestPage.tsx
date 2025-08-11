@@ -161,7 +161,7 @@ export function LoanRequestPage() {
 
   const itemOwner = item.owner;
   const mainImage = item.images[0] || '/placeholder.png';
-  const isAvailable = item.status === 'available';
+  const isAvailable = item.is_available;
 
   return (
     <div className="min-h-screen bg-background">

@@ -28,7 +28,7 @@ export function ItemCard({ item, variant = 'default', itemOwner, testImage }: It
       ? getCategoryPlaceholder(item.categoryId)
       : item.images[0] || getCategoryPlaceholder(item.categoryId));
 
-  const isAvailable = item.status === 'available';
+  const isAvailable = item.is_available;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {

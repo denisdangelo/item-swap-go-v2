@@ -178,7 +178,7 @@ function ItemDetailsPage() {
   }
 
   const { owner, category } = item;
-  const isAvailable = item.status === 'available';
+  const isAvailable = item.is_available;
 
   return (
     <div className="min-h-screen bg-background">
