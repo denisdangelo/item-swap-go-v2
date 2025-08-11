@@ -2,6 +2,16 @@ import { Edit, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AppHeader } from '@/components/ui/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,12 +22,7 @@ import { itemsApiService } from '@/services/api/index';
 
 import type { ItemWithDetails } from '@/services/api/ItemsApiService';
 
-// Declare HTMLImageElement for TypeScript
-declare global {
-  interface Window {
-    HTMLImageElement: typeof HTMLImageElement;
-  }
-}
+
 
 const buildImageUrl = (imageUrl: string) => {
   if (imageUrl.startsWith('http')) return imageUrl;
@@ -47,6 +52,14 @@ function MyItemsPage() {
   const [items, setItems] = useState<ItemWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ItemWithDetails | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Monitorar estado do modal
+  useEffect(() => {
+    console.log('Estado do modal mudou:', { showDeleteDialog, itemToDelete });
+  }, [showDeleteDialog, itemToDelete]);
 
   useEffect(() => {
     const fetchMyItems = async () => {
@@ -78,11 +91,59 @@ function MyItemsPage() {
     });
   };
 
-  const handleDeleteItem = (itemId: string) => {
+  const handleDeleteItem = (item: ItemWithDetails) => {
+    console.log('handleDeleteItem chamado com item:', item);
+    
+    console.log('Tentando mostrar toast...');
+    // Teste simples - mostrar toast imediatamente
     toast({
-      title: 'Funcionalidade em desenvolvimento',
-      description: 'A exclusão de itens será implementada em breve.',
+      title: 'Teste do botão',
+      description: `Botão clicado para o item: ${item.title}`,
     });
+    console.log('Toast chamado!');
+    
+    console.log('Tentando mostrar alert...');
+    // Teste com alert também
+    window.alert(`Botão clicado para o item: ${item.title}`);
+    console.log('Alert chamado!');
+    
+    console.log('Tentando abrir modal...');
+    setItemToDelete(item);
+    setShowDeleteDialog(true);
+    console.log('Modal aberto!');
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      await itemsApiService.deleteItem(itemToDelete.id);
+      
+      // Remove o item da lista local
+      setItems(prevItems => prevItems.filter(item => item.id !== itemToDelete.id));
+      
+      toast({
+        title: 'Item excluído',
+        description: 'O item foi excluído com sucesso.',
+      });
+    } catch (err) {
+      console.error('Erro ao excluir item:', err);
+      toast({
+        title: 'Erro ao excluir item',
+        description: 'Não foi possível excluir o item. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteDialog(false);
+      setItemToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteDialog(false);
+    setItemToDelete(null);
   };
 
   const formatPrice = (price: number) => {
@@ -137,6 +198,38 @@ function MyItemsPage() {
           </Button>
         </div>
 
+        {/* TESTE SIMPLES */}
+        <div className="mb-4 p-4 bg-yellow-100 border-2 border-yellow-500">
+          <h3 className="text-lg font-bold mb-2">TESTE DE BOTÃO SIMPLES</h3>
+          <button
+            className="px-4 py-2 bg-red-500 text-white rounded font-bold"
+            onClick={() => {
+              console.log('TESTE SIMPLES CLICADO!');
+              window.alert('TESTE SIMPLES CLICADO!');
+            }}
+            onMouseDown={() => {
+              console.log('TESTE SIMPLES MOUSEDOWN!');
+            }}
+            onTouchStart={() => {
+              console.log('TESTE SIMPLES TOUCHSTART!');
+            }}
+          >
+            CLIQUE AQUI PARA TESTE
+          </button>
+          
+          {/* Teste do modal */}
+          <button
+            className="ml-2 px-4 py-2 bg-blue-500 text-white rounded font-bold"
+            onClick={() => {
+              console.log('TESTE MODAL CLICADO!');
+              setItemToDelete({ id: 'test', title: 'Item de Teste' } as any);
+              setShowDeleteDialog(true);
+            }}
+          >
+            TESTE MODAL
+          </button>
+        </div>
+
         {error ? (
           <Card className="border-red-200 bg-red-50">
             <CardContent className="pt-6">
@@ -184,7 +277,7 @@ function MyItemsPage() {
                       alt={item.title}
                       className="h-full w-full object-cover"
                       onError={(e) => {
-                        const target = e.target as HTMLImageElement;
+                        const target = e.target as any;
                         const fallbackUrl = getCategoryImage(item.category?.name || 'Ferramentas');
                         if (target.src !== fallbackUrl) {
                           target.src = fallbackUrl;
@@ -225,24 +318,25 @@ function MyItemsPage() {
                     </p>
 
                     <div className="flex gap-2">
-                      <Button
-                        className="flex-1"
-                        onClick={() => handleEditItem(item.id)}
-                        size="sm"
-                        variant="outline"
+                      <button
+                        className="flex-1 px-3 py-2 bg-blue-500 text-white rounded text-sm"
+                        onClick={() => {
+                          console.log('BOTÃO EDITAR CLICADO!');
+                          window.alert('BOTÃO EDITAR CLICADO!');
+                        }}
                       >
-                        <Edit className="mr-2 h-4 w-4" />
                         Editar
-                      </Button>
-                      <Button
-                        className="flex-1"
-                        onClick={() => handleDeleteItem(item.id)}
-                        size="sm"
-                        variant="outline"
+                      </button>
+                      <button
+                        className="flex-1 px-3 py-2 bg-red-500 text-white rounded text-sm"
+                        onClick={() => {
+                          console.log('BOTÃO EXCLUIR CLICADO!');
+                          window.alert('BOTÃO EXCLUIR CLICADO!');
+                          handleDeleteItem(item);
+                        }}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
                         Excluir
-                      </Button>
+                      </button>
                     </div>
                   </CardContent>
                 </Card>
@@ -250,6 +344,38 @@ function MyItemsPage() {
             })}
           </div>
         )}
+
+        {/* Modal de Confirmação de Exclusão */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você tem certeza de que deseja excluir o item "{itemToDelete?.title}"? 
+                Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={cancelDelete} disabled={deleteLoading}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDelete} 
+                disabled={deleteLoading}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleteLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  'Excluir'
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </PageContainer>
     </div>
   );
