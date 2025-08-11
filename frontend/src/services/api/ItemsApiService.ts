@@ -203,6 +203,17 @@ export class ItemsApiService {
     throw new Error('Failed to get owner items');
   }
 
+  // Get my items (items owned by the logged-in user)
+  async getMyItems(): Promise<ItemWithDetails[]> {
+    const response = await apiService.get<ItemWithDetails[]>('/items/my-items');
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error('Failed to get my items');
+  }
+
   // Get items by category
   async getItemsByCategory(categoryId: string): Promise<Item[]> {
     const response = await apiService.get<Item[]>(`/items/category/${categoryId}`);

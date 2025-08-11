@@ -45,6 +45,7 @@ import MessagesPage from '@/pages/MessagesPage';
 import PoliticaPrivacidade from '@/pages/PoliticaPrivacidade';
 import TermosUsoPage from '@/pages/TermosUsoPage';
 import type { AddItemData, Item } from '@/types';
+import MyItemsPage from '@/pages/MyItemsPage';
 
 const queryClient = new QueryClient();
 
@@ -309,6 +310,16 @@ function AppRoutes() {
             }
             path="/messages"
           />
+          <Route
+            element={
+              <ProtectedRoute>
+                <PageWrapper>
+                  <MyItemsPage />
+                </PageWrapper>
+              </ProtectedRoute>
+            }
+            path="/my-items"
+          />
           <Route element={<Navigate replace to="/" />} path="*" />
         </Routes>
       </div>
@@ -349,3 +360,329 @@ function App() {
 }
 
 export default App;
+
+              <PageWrapper>
+
+                <FAQPage />
+
+              </PageWrapper>
+
+            }
+
+            path="/faq"
+
+          />
+
+          <Route
+
+            element={
+
+              <PageWrapper>
+
+                <MainFeedNew />
+
+              </PageWrapper>
+
+            }
+
+            path="/search"
+
+          />
+
+          <Route
+
+            element={
+
+              <ProtectedRoute>
+
+                <ChatScreenWrapper />
+
+              </ProtectedRoute>
+
+            }
+
+            path="/chat/:itemId"
+
+          />
+
+          <Route
+
+            element={
+
+              <PageWrapper>
+
+                <UserProfilePage />
+
+              </PageWrapper>
+
+            }
+
+            path="/profile"
+
+          />
+
+          <Route
+
+            element={
+
+              <PageWrapper>
+
+                <AddItemScreen
+
+                  onSave={async (data: AddItemData) => {
+
+                    try {
+
+                        // Preparar dados para o serviço
+
+                          const createData = {
+
+                            category_id: data.categoryId,
+
+                            title: data.title,
+
+                            description: data.description,
+
+                            condition_rating: 5,
+
+                            estimated_value: parseFloat(data.price),
+
+                            daily_rate: parseFloat(data.price),
+
+                            location_lat: data.latitude ?? 0,
+
+                            location_lng: data.longitude ?? 0,
+
+                            location_address: data.address,
+
+                          } as const;
+
+
+
+                        // Criar o item
+                        const createdItem = await itemsApiService.createItem(createData as any);
+                        
+                        // Upload das imagens se houver
+                        if (data.images && data.images.length > 0) {
+                          try {
+                            // Converter base64 para File objects
+                            const imageFiles: File[] = [];
+                            for (let i = 0; i < data.images.length; i++) {
+                              const base64Data = data.images[i];
+                              const response = await fetch(base64Data);
+                              const blob = await response.blob();
+                              const file = new File([blob], `image-${i}.jpg`, { type: 'image/jpeg' });
+                              imageFiles.push(file);
+                            }
+                            
+                            // Upload das imagens
+                            await itemsApiService.uploadItemImages(createdItem.id, imageFiles);
+                          } catch (imageError) {
+                            console.error('Error uploading images:', imageError);
+                            // Não falhar se o upload de imagens falhar
+                          }
+                        }
+                        
+                        navigate('/');
+
+                      } catch (error) {
+
+                        console.error('Error creating item:', error);
+
+                        throw error;
+
+                      }
+
+                    }}
+
+                />
+
+              </PageWrapper>
+
+            }
+
+            path="/add-item"
+
+          />
+
+          <Route
+
+            element={
+
+              <PageWrapper>
+
+                <PoliticaPrivacidade />
+
+              </PageWrapper>
+
+            }
+
+            path="/politica-privacidade"
+
+          />
+
+          <Route
+
+            element={
+
+              <PageWrapper>
+
+                <SettingsPage />
+
+              </PageWrapper>
+
+            }
+
+            path="/settings"
+
+          />
+
+          <Route
+
+            element={
+
+              <PageWrapper>
+
+                <ContatoPage />
+
+              </PageWrapper>
+
+            }
+
+            path="/contato"
+
+          />
+
+          <Route
+
+            element={
+
+              <PageWrapper>
+
+                <TermosUsoPage />
+
+              </PageWrapper>
+
+            }
+
+            path="/termos"
+
+          />
+
+          <Route
+
+            element={
+
+              <PageWrapper>
+
+                <TermosUsoPage />
+
+              </PageWrapper>
+
+            }
+
+            path="/termos-uso"
+
+          />
+
+          <Route
+
+            element={
+
+              <ProtectedRoute>
+
+                <PageWrapper>
+
+                  <MessagesPage />
+
+                </PageWrapper>
+
+              </ProtectedRoute>
+
+            }
+
+            path="/messages"
+
+          />
+
+          <Route element={<Navigate replace to="/" />} path="*" />
+
+        </Routes>
+
+      </div>
+
+
+
+      {/* Bottom Navigation para mobile */}
+
+      <BottomNav />
+
+
+
+      {/* Footer otimizado mobile-first */}
+
+      <OptimizedFooter />
+
+
+
+      {/* Banner de cookies - apenas para usuários logados */}
+
+      <CookieBanner />
+
+    </div>
+
+  );
+
+}
+
+
+
+function App() {
+
+  // Log environment status on app startup
+
+  useEffect(() => {
+
+    logEnvironmentStatus();
+
+  }, []);
+
+
+
+  return (
+
+    <QueryClientProvider client={queryClient}>
+
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+
+        <SearchFiltersProvider>
+
+          <Router>
+
+            <TooltipProvider delayDuration={0}>
+
+              <ScrollToTop />
+
+              <AppRoutes />
+
+              <Toaster />
+
+            </TooltipProvider>
+
+          </Router>
+
+        </SearchFiltersProvider>
+
+      </ThemeProvider>
+
+    </QueryClientProvider>
+
+  );
+
+}
+
+
+
+export default App;
+
+

@@ -6,6 +6,7 @@ import {
   getItemImages,
   getItemsByCategory,
   getItemsByOwner,
+  getMyItems,
   getNearbyItems,
   removeItemImage,
   searchItems,
@@ -21,10 +22,13 @@ const router = Router();
 router.get('/search', optionalAuthenticate, searchItems);
 router.get('/nearby', getNearbyItems);
 router.get('/category/:categoryId', getItemsByCategory);
-router.get('/:id', optionalAuthenticate, getItemById);
-router.get('/:id/images', getItemImages);
 
 // Protected routes - require authentication
+router.get('/my-items', authenticate, getMyItems);
+
+// Item-specific routes (must come after specific routes)
+router.get('/:id', optionalAuthenticate, getItemById);
+router.get('/:id/images', getItemImages);
 router.post('/', authenticate, createItem);
 router.put('/:id', authenticate, updateItem);
 router.delete('/:id', authenticate, deleteItem);

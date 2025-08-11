@@ -104,7 +104,20 @@ export class ItemController {
 
     const items = await this.itemService.getItemsByOwner(ownerId);
 
-    sendSuccess(res, items, 'Owner items retrieved successfully');
+    sendSuccess(res, items, 'Items retrieved successfully');
+  });
+
+  // Get my items (items owned by the logged-in user)
+  getMyItems = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+
+    const items = await this.itemService.getMyItems(userId);
+
+    sendSuccess(res, items, 'My items retrieved successfully');
   });
 
   // Get items by category
@@ -205,6 +218,7 @@ export const updateItem = itemController.updateItem;
 export const deleteItem = itemController.deleteItem;
 export const searchItems = itemController.searchItems;
 export const getItemsByOwner = itemController.getItemsByOwner;
+export const getMyItems = itemController.getMyItems;
 export const getItemsByCategory = itemController.getItemsByCategory;
 export const getNearbyItems = itemController.getNearbyItems;
 export const setItemAvailability = itemController.setItemAvailability;

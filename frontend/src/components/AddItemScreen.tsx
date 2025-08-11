@@ -33,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
+import { useCategories } from '@/hooks/useCategories';
 import { cn } from '@/lib/utils';
 
 import type { AddItemData, Category, ItemSpecification } from '@/types';
@@ -42,36 +43,11 @@ interface AddItemScreenProps {
   onSave: (item: AddItemData) => Promise<void>;
 }
 
-// Categorias seguindo o novo design system
-const CATEGORIES: Category[] = [
-  { id: 'ferramentas', name: 'Ferramentas', icon: '🔧', color: 'bg-surface' },
-  { id: 'eletronicos', name: 'Eletrônicos', icon: '💻', color: 'bg-surface' },
-  { id: 'eletrodomesticos', name: 'Eletrodomésticos', icon: '🏠', color: 'bg-surface' },
-  { id: 'esportes', name: 'Esportes', icon: '🏄‍♂️', color: 'bg-surface' },
-  { id: 'livros', name: 'Livros', icon: '📚', color: 'bg-surface' },
-  { id: 'moveis', name: 'Móveis', icon: '🪑', color: 'bg-surface' },
-  { id: 'escritorio', name: 'Escritório', icon: '🖥️', color: 'bg-surface' },
-  { id: 'lazer', name: 'Lazer', icon: '🏖️', color: 'bg-surface' },
-  { id: 'acessibilidade', name: 'Acessibilidade (PCD)', icon: '♿', color: 'bg-surface' },
-];
-
-// Especificações comuns por categoria
-const SPECIFICATIONS_BY_CATEGORY: Record<string, string[]> = {
-  ferramentas: ['Marca', 'Modelo', 'Potência', 'Condição', 'Garantia'],
-  eletronicos: ['Marca', 'Modelo', 'Voltagem', 'Condição', 'Garantia'],
-  eletrodomesticos: ['Marca', 'Modelo', 'Potência', 'Voltagem', 'Condição'],
-  esportes: ['Marca', 'Modelo', 'Tamanho', 'Material', 'Condição'],
-  livros: ['Autor', 'Editora', 'Ano', 'Condição', 'Idioma'],
-  moveis: ['Material', 'Dimensões', 'Cor', 'Condição', 'Estilo'],
-  escritorio: ['Marca', 'Modelo', 'Dimensões', 'Material', 'Condição'],
-  lazer: ['Marca', 'Modelo', 'Tamanho', 'Material', 'Condição'],
-  acessibilidade: ['Marca', 'Modelo', 'Capacidade', 'Condição', 'Certificação'],
-};
-
 export default function AddItemScreen({ onBack, onSave }: AddItemScreenProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { categories, loadCategories } = useCategories();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
@@ -102,6 +78,23 @@ export default function AddItemScreen({ onBack, onSave }: AddItemScreenProps) {
 
   const totalSteps = 3;
 
+  // Carregar categorias quando o componente montar
+  useState(() => {
+    loadCategories();
+  });
+
+  // Especificações comuns por categoria (mantidas como fallback)
+  const SPECIFICATIONS_BY_CATEGORY: Record<string, string[]> = {
+    'Ferramentas': ['Marca', 'Modelo', 'Potência', 'Condição', 'Garantia'],
+    'Eletrônicos': ['Marca', 'Modelo', 'Voltagem', 'Condição', 'Garantia'],
+    'Casa e Jardim': ['Marca', 'Modelo', 'Potência', 'Voltagem', 'Condição'],
+    'Esportes': ['Marca', 'Modelo', 'Tamanho', 'Material', 'Condição'],
+    'Livros e Mídia': ['Autor', 'Editora', 'Ano', 'Condição', 'Idioma'],
+    'Música': ['Marca', 'Modelo', 'Tamanho', 'Material', 'Condição'],
+    'Roupas e Acessórios': ['Marca', 'Modelo', 'Tamanho', 'Material', 'Condição'],
+    'Veículos': ['Marca', 'Modelo', 'Capacidade', 'Condição', 'Certificação'],
+  };
+
   // Função para marcar campo como tocado
   const markFieldAsTouched = (fieldName: string) => {
     setTouchedFields((prev) => new Set(prev).add(fieldName));
@@ -112,18 +105,24 @@ export default function AddItemScreen({ onBack, onSave }: AddItemScreenProps) {
     if (!touchedFields.has(fieldName)) return true;
 
     switch (fieldName) {
-      case 'title':
+      case 'title': {
         return formData.title.trim().length > 0;
-      case 'categoryId':
+      }
+      case 'categoryId': {
         return formData.categoryId.length > 0;
-      case 'description':
+      }
+      case 'description': {
         return formData.description.trim().length > 0;
-      case 'price':
+      }
+      case 'price': {
         return formData.price && parseFloat(formData.price) > 0;
-      case 'address':
+      }
+      case 'address': {
         return formData.address.trim().length > 0;
-      case 'images':
+      }
+      case 'images': {
         return formData.images.length > 0;
+      }
       default:
         return true;
     }
@@ -134,20 +133,26 @@ export default function AddItemScreen({ onBack, onSave }: AddItemScreenProps) {
     if (!touchedFields.has(fieldName)) return '';
 
     switch (fieldName) {
-      case 'title':
+      case 'title': {
         return formData.title.trim().length === 0 ? 'Título é obrigatório' : '';
-      case 'categoryId':
+      }
+      case 'categoryId': {
         return formData.categoryId.length === 0 ? 'Categoria é obrigatória' : '';
-      case 'description':
+      }
+      case 'description': {
         return formData.description.trim().length === 0 ? 'Descrição é obrigatória' : '';
-      case 'price':
+      }
+      case 'price': {
         return !formData.price || parseFloat(formData.price) <= 0
           ? 'Preço deve ser maior que zero'
           : '';
-      case 'address':
+      }
+      case 'address': {
         return formData.address.trim().length === 0 ? 'Endereço é obrigatório' : '';
-      case 'images':
+      }
+      case 'images': {
         return formData.images.length === 0 ? 'Adicione pelo menos uma imagem' : '';
+      }
       default:
         return '';
     }
@@ -167,49 +172,42 @@ export default function AddItemScreen({ onBack, onSave }: AddItemScreenProps) {
         return false;
       }
     }
+
     return true;
   };
 
-  // Validação por etapa
   const validateStep = (step: number) => {
     switch (step) {
-      case 1:
-        const step1Fields = ['title', 'categoryId', 'description'];
-        return step1Fields.every((field) => {
-          markFieldAsTouched(field);
-          return isFieldValid(field);
-        });
-      case 2:
-        const step2Fields = ['price', 'address'];
-        return step2Fields.every((field) => {
-          markFieldAsTouched(field);
-          return isFieldValid(field);
-        });
-      case 3:
-        markFieldAsTouched('images');
-        return isFieldValid('images');
-    }
+      case 1: {
+        const fields = ['title', 'categoryId', 'description', 'price'];
+        return fields.every((field) => isFieldValid(field));
+      }
+      case 2: {
+        const fields = ['address'];
+        return fields.every((field) => isFieldValid(field));
+      }
+      case 3: {
+        const fields = ['images'];
+        return fields.every((field) => isFieldValid(field));
+      }
+      default:
     return true;
+    }
   };
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      if (currentStep < totalSteps) {
-        setCurrentStep(currentStep + 1);
-      }
+      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     } else {
-      toast({
-        title: 'Campos obrigatórios',
-        description: 'Por favor, preencha todos os campos desta etapa.',
-        variant: 'destructive',
-      });
+      // Marcar campos como tocados para mostrar erros
+      const fields = currentStep === 1 ? ['title', 'categoryId', 'description', 'price'] : 
+                    currentStep === 2 ? ['address'] : ['images'];
+      fields.forEach(markFieldAsTouched);
     }
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -219,28 +217,39 @@ export default function AddItemScreen({ onBack, onSave }: AddItemScreenProps) {
     setIsUploadingImage(true);
     try {
       const newImages: string[] = [];
-      const maxImages = 5;
-      const filesToProcess = Array.from(files).slice(0, maxImages - formData.images.length);
-
-      for (const file of filesToProcess) {
-        if (file.size > 5 * 1024 * 1024) {
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validar tipo de arquivo
+        if (!file.type.startsWith('image/')) {
           toast({
-            title: 'Arquivo muito grande',
-            description: 'Cada imagem deve ter no máximo 5MB.',
+            title: 'Tipo de arquivo inválido',
+            description: 'Por favor, selecione apenas arquivos de imagem.',
             variant: 'destructive',
           });
           continue;
         }
 
-        const reader = new FileReader();
-        const imageUrl = await new Promise<string>((resolve) => {
-          reader.onload = (e) => {
-            resolve(e.target?.result as string);
-          };
+        // Validar tamanho (máximo 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          toast({
+            title: 'Arquivo muito grande',
+            description: 'Por favor, selecione imagens menores que 5MB.',
+            variant: 'destructive',
+          });
+          continue;
+        }
+
+        // Converter para base64
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new window.FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
           reader.readAsDataURL(file);
         });
 
-        newImages.push(imageUrl);
+        newImages.push(base64);
       }
 
       setFormData((prev) => ({
@@ -248,17 +257,12 @@ export default function AddItemScreen({ onBack, onSave }: AddItemScreenProps) {
         images: [...prev.images, ...newImages],
       }));
 
-      if (newImages.length > 0) {
-        toast({
-          title: 'Imagens adicionadas',
-          description: `${newImages.length} imagem(ns) adicionada(s) com sucesso.`,
-        });
-      }
+      markFieldAsTouched('images');
     } catch (error) {
       console.error('Error uploading images:', error);
       toast({
         title: 'Erro ao fazer upload',
-        description: 'Ocorreu um erro ao processar as imagens.',
+        description: 'Ocorreu um erro ao processar as imagens. Tente novamente.',
         variant: 'destructive',
       });
     } finally {
@@ -350,10 +354,10 @@ export default function AddItemScreen({ onBack, onSave }: AddItemScreenProps) {
   };
 
   const addSuggestedSpecifications = () => {
-    const category = CATEGORIES.find((c) => c.id === formData.categoryId);
+    const category = categories.find((c) => c.id === formData.categoryId);
     if (!category) return;
 
-    const suggestedSpecs = SPECIFICATIONS_BY_CATEGORY[category.id] || [];
+    const suggestedSpecs = SPECIFICATIONS_BY_CATEGORY[category.name] || [];
     const existingLabels = formData.specifications?.map((s) => s.label.toLowerCase()) || [];
 
     const newSpecs = suggestedSpecs
@@ -455,7 +459,7 @@ export default function AddItemScreen({ onBack, onSave }: AddItemScreenProps) {
                     Categoria <span className="text-error">*</span>
                   </Label>
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                    {CATEGORIES.map((cat) => (
+                    {categories.map((cat) => (
                       <button
                         key={cat.id}
                         aria-label={cat.name}

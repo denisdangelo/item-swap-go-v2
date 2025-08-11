@@ -139,13 +139,51 @@ export class ItemService {
 
   // Get items by owner
   async getItemsByOwner(ownerId: string): Promise<Item[]> {
-    // Check if user exists
-    const user = await this.userRepository.findById(ownerId);
-    if (!user) {
-      throw new NotFoundError('User not found');
-    }
-
     return this.itemRepository.findByOwner(ownerId);
+  }
+
+  // Get my items (items owned by the logged-in user)
+  async getMyItems(userId: string): Promise<ItemWithDetails[]> {
+    try {
+      const items = await this.itemRepository.findByOwner(userId);
+      
+      // Get full details for each item, handling errors gracefully
+      const itemsWithDetails = await Promise.all(
+        items.map(async (item) => {
+          try {
+            const itemWithDetails = await this.itemRepository.findWithDetails(item.id);
+            return itemWithDetails;
+          } catch (error) {
+            console.error(`Error getting details for item ${item.id}:`, error);
+            // Return a basic item structure if details can't be loaded
+            return {
+              ...item,
+              owner: {
+                id: item.owner_id,
+                first_name: 'Unknown',
+                last_name: 'User',
+                avatar_url: null,
+                average_rating: 0,
+                reviews_count: 0,
+              },
+              category: {
+                id: item.category_id,
+                name: 'Unknown Category',
+                icon: null,
+                color: null,
+              },
+              images: [],
+            } as ItemWithDetails;
+          }
+        })
+      );
+
+      // Filter out null values and return valid items
+      return itemsWithDetails.filter((item): item is ItemWithDetails => item !== null);
+    } catch (error) {
+      console.error('Error in getMyItems:', error);
+      throw error;
+    }
   }
 
   // Get items by category

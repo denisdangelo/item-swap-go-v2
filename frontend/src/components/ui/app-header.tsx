@@ -5,6 +5,7 @@ import {
   HelpCircle,
   Home,
   Menu,
+  Package,
   Search,
   Shield,
   SlidersHorizontal,
@@ -288,6 +289,18 @@ export function AppHeader({
               >
                 <UserIcon className="h-5 w-5 text-primary" />
                 <span>Meu Perfil</span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-foreground hover:bg-gray-50 hover:text-primary"
+                onClick={() => {
+                  navigate('/my-items');
+                  setIsSidebarOpen(false);
+                }}
+              >
+                <Package className="h-5 w-5 text-primary" />
+                <span>Meus Itens</span>
               </Button>
 
               <Button
