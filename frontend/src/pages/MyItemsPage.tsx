@@ -1,6 +1,7 @@
 import { Edit, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import {
   AlertDialog,
@@ -16,7 +17,6 @@ import { AppHeader } from '@/components/ui/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PageContainer } from '@/components/ui/page-container';
-import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { itemsApiService } from '@/services/api/index';
 
@@ -46,7 +46,6 @@ const getCategoryImage = (categoryName: string) => {
 
 function MyItemsPage() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
   
   const [items, setItems] = useState<ItemWithDetails[]>([]);
@@ -55,11 +54,9 @@ function MyItemsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ItemWithDetails | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-  // Monitorar estado do modal
-  useEffect(() => {
-    console.log('Estado do modal mudou:', { showDeleteDialog, itemToDelete });
-  }, [showDeleteDialog, itemToDelete]);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<ItemWithDetails | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     const fetchMyItems = async () => {
@@ -71,10 +68,8 @@ function MyItemsPage() {
       } catch (err) {
         console.error('Erro ao carregar meus itens:', err);
         setError('Erro ao carregar seus itens. Tente novamente.');
-        toast({
-          title: 'Erro ao carregar itens',
+        toast.error('Erro ao carregar itens', {
           description: 'Não foi possível carregar seus itens. Tente novamente.',
-          variant: 'destructive',
         });
       } finally {
         setLoading(false);
@@ -82,35 +77,26 @@ function MyItemsPage() {
     };
 
     fetchMyItems();
-  }, [toast]);
+  }, []);
 
-  const handleEditItem = (itemId: string) => {
-    toast({
-      title: 'Funcionalidade em desenvolvimento',
-      description: 'A edição de itens será implementada em breve.',
-    });
+  const handleEditItem = (item: ItemWithDetails) => {
+    console.log('handleEditItem chamado com item:', item);
+    
+    // Mostrar modal de edição
+    setItemToEdit(item);
+    setShowEditDialog(true);
   };
 
   const handleDeleteItem = (item: ItemWithDetails) => {
     console.log('handleDeleteItem chamado com item:', item);
     
-    console.log('Tentando mostrar toast...');
     // Teste simples - mostrar toast imediatamente
-    toast({
-      title: 'Teste do botão',
-      description: `Botão clicado para o item: ${item.title}`,
+    toast.info('Confirmar exclusão', {
+      description: `Preparando para excluir o item: ${item.title}`,
     });
-    console.log('Toast chamado!');
     
-    console.log('Tentando mostrar alert...');
-    // Teste com alert também
-    window.alert(`Botão clicado para o item: ${item.title}`);
-    console.log('Alert chamado!');
-    
-    console.log('Tentando abrir modal...');
     setItemToDelete(item);
     setShowDeleteDialog(true);
-    console.log('Modal aberto!');
   };
 
   const confirmDelete = async () => {
@@ -123,16 +109,13 @@ function MyItemsPage() {
       // Remove o item da lista local
       setItems(prevItems => prevItems.filter(item => item.id !== itemToDelete.id));
       
-      toast({
-        title: 'Item excluído',
+      toast.success('Item excluído', {
         description: 'O item foi excluído com sucesso.',
       });
     } catch (err) {
       console.error('Erro ao excluir item:', err);
-      toast({
-        title: 'Erro ao excluir item',
+      toast.error('Erro ao excluir item', {
         description: 'Não foi possível excluir o item. Tente novamente.',
-        variant: 'destructive',
       });
     } finally {
       setDeleteLoading(false);
@@ -152,6 +135,48 @@ function MyItemsPage() {
       currency: 'BRL',
       minimumFractionDigits: 2,
     }).format(price);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!itemToEdit) return;
+
+    setEditLoading(true);
+    try {
+      const title = (document.getElementById('edit-title') as HTMLInputElement)?.value;
+      const description = (document.getElementById('edit-description') as any)?.value;
+      const dailyRate = (document.getElementById('edit-daily-rate') as HTMLInputElement)?.value;
+
+      if (!title || !description || !dailyRate) {
+        toast.error('Todos os campos são obrigatórios');
+        return;
+      }
+
+      const updateData = {
+        title,
+        description,
+        daily_rate: parseFloat(dailyRate),
+      };
+
+      await itemsApiService.updateItem(itemToEdit.id, updateData);
+
+      // Atualizar o item na lista local
+      setItems(prevItems =>
+        prevItems.map(item =>
+          item.id === itemToEdit.id
+            ? { ...item, ...updateData }
+            : item
+        )
+      );
+
+      toast.success('Item atualizado com sucesso!');
+      setShowEditDialog(false);
+      setItemToEdit(null);
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast.error('Erro ao atualizar item. Tente novamente.');
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   if (loading) {
@@ -196,38 +221,6 @@ function MyItemsPage() {
             <Plus className="h-4 w-4" />
             Adicionar Item
           </Button>
-        </div>
-
-        {/* TESTE SIMPLES */}
-        <div className="mb-4 p-4 bg-yellow-100 border-2 border-yellow-500">
-          <h3 className="text-lg font-bold mb-2">TESTE DE BOTÃO SIMPLES</h3>
-          <button
-            className="px-4 py-2 bg-red-500 text-white rounded font-bold"
-            onClick={() => {
-              console.log('TESTE SIMPLES CLICADO!');
-              window.alert('TESTE SIMPLES CLICADO!');
-            }}
-            onMouseDown={() => {
-              console.log('TESTE SIMPLES MOUSEDOWN!');
-            }}
-            onTouchStart={() => {
-              console.log('TESTE SIMPLES TOUCHSTART!');
-            }}
-          >
-            CLIQUE AQUI PARA TESTE
-          </button>
-          
-          {/* Teste do modal */}
-          <button
-            className="ml-2 px-4 py-2 bg-blue-500 text-white rounded font-bold"
-            onClick={() => {
-              console.log('TESTE MODAL CLICADO!');
-              setItemToDelete({ id: 'test', title: 'Item de Teste' } as any);
-              setShowDeleteDialog(true);
-            }}
-          >
-            TESTE MODAL
-          </button>
         </div>
 
         {error ? (
@@ -320,20 +313,13 @@ function MyItemsPage() {
                     <div className="flex gap-2">
                       <button
                         className="flex-1 px-3 py-2 bg-blue-500 text-white rounded text-sm"
-                        onClick={() => {
-                          console.log('BOTÃO EDITAR CLICADO!');
-                          window.alert('BOTÃO EDITAR CLICADO!');
-                        }}
+                        onClick={() => handleEditItem(item)}
                       >
                         Editar
                       </button>
                       <button
                         className="flex-1 px-3 py-2 bg-red-500 text-white rounded text-sm"
-                        onClick={() => {
-                          console.log('BOTÃO EXCLUIR CLICADO!');
-                          window.alert('BOTÃO EXCLUIR CLICADO!');
-                          handleDeleteItem(item);
-                        }}
+                        onClick={() => handleDeleteItem(item)}
                       >
                         Excluir
                       </button>
@@ -372,6 +358,65 @@ function MyItemsPage() {
                 ) : (
                   'Excluir'
                 )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Modal de Edição */}
+        <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Editar Item</AlertDialogTitle>
+              <AlertDialogDescription>
+                {itemToEdit && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Título
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue={itemToEdit.title}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        id="edit-title"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Descrição
+                      </label>
+                      <textarea
+                        defaultValue={itemToEdit.description}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        id="edit-description"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Valor Diário (R$)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={itemToEdit.daily_rate}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        id="edit-daily-rate"
+                      />
+                    </div>
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSaveEdit}
+                disabled={editLoading}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {editLoading ? 'Salvando...' : 'Salvar'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
